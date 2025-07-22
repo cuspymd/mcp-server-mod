@@ -13,17 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandExecutor.class);
     
     private final MCPConfig config;
     private final SafetyValidator safetyValidator;
-    
-    private static final Pattern BLOCKS_AFFECTED_PATTERN = Pattern.compile("(\\d+) blocks? (filled|affected|changed)");
-    private static final Pattern ENTITIES_PATTERN = Pattern.compile("(\\d+) entities?");
     
     public CommandExecutor(MCPConfig config) {
         this.config = config;

@@ -20,14 +20,12 @@ public class IPCServer {
     private static final Gson GSON = new Gson();
     private static final int IPC_PORT = 25565; // Default port for IPC
     
-    private final MCPConfig config;
     private final CommandExecutor commandExecutor;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ServerSocket serverSocket;
     private ExecutorService executor;
     
     public IPCServer(MCPConfig config) {
-        this.config = config;
         this.commandExecutor = new CommandExecutor(config);
     }
     

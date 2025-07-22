@@ -14,13 +14,11 @@ public class MCPServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MCPServer.class);
     private static final Gson GSON = new Gson();
     
-    private final MCPConfig config;
     private final MCPRequestHandler requestHandler;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private Thread serverThread;
     
     public MCPServer(MCPConfig config) {
-        this.config = config;
         this.requestHandler = new MCPRequestHandler(config);
     }
     

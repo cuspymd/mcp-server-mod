@@ -1,8 +1,6 @@
 package cuspymd.mcp.mod.server;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import cuspymd.mcp.mod.command.CommandExecutor;
 import cuspymd.mcp.mod.config.MCPConfig;
 import org.slf4j.Logger;
@@ -10,13 +8,10 @@ import org.slf4j.LoggerFactory;
 
 public class MCPRequestHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MCPRequestHandler.class);
-    private static final Gson GSON = new Gson();
     
-    private final MCPConfig config;
     private final CommandExecutor commandExecutor;
     
     public MCPRequestHandler(MCPConfig config) {
-        this.config = config;
         this.commandExecutor = new CommandExecutor(config);
     }
     
