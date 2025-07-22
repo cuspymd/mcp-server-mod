@@ -1,22 +1,23 @@
 package cuspymd.mcp.mod.server;
 
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import cuspymd.mcp.mod.config.MCPConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
+import java.io.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MCPServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MCPServer.class);
+    private static final Gson GSON = new Gson();
     
     private final MCPConfig config;
-    private HttpServer httpServer;
-    private MCPRequestHandler requestHandler;
+    private final MCPRequestHandler requestHandler;
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private Thread serverThread;
     
     public MCPServer(MCPConfig config) {
         this.config = config;
@@ -24,27 +25,75 @@ public class MCPServer {
     }
     
     public void start() throws IOException {
-        httpServer = HttpServer.create(new InetSocketAddress(
-            config.getServer().getHost(), 
-            config.getServer().getPort()
-        ), 0);
+        if (running.get()) {
+            return;
+        }
         
-        httpServer.createContext("/mcp/initialize", requestHandler::handleInitialize);
-        httpServer.createContext("/mcp/ping", requestHandler::handlePing);
-        httpServer.createContext("/mcp/tools/list", requestHandler::handleToolsList);
-        httpServer.createContext("/mcp/tools/call", requestHandler::handleToolsCall);
+        running.set(true);
+        serverThread = new Thread(this::runStdioLoop);
+        serverThread.setDaemon(true);
+        serverThread.setName("MCP-Stdio-Server");
+        serverThread.start();
         
-        httpServer.setExecutor(Executors.newFixedThreadPool(4));
-        httpServer.start();
+        LOGGER.info("MCP Server started with stdio transport");
+    }
+    
+    private void runStdioLoop() {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+             PrintWriter writer = new PrintWriter(System.out, true)) {
+            
+            while (running.get()) {
+                String line = reader.readLine();
+                if (line == null) {
+                    break;
+                }
+                
+                try {
+                    JsonObject request = JsonParser.parseString(line).getAsJsonObject();
+                    JsonObject response = handleRequest(request);
+                    writer.println(GSON.toJson(response));
+                } catch (Exception e) {
+                    LOGGER.error("Error processing request: " + line, e);
+                    JsonObject errorResponse = createErrorResponse("Error processing request: " + e.getMessage());
+                    writer.println(GSON.toJson(errorResponse));
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error in stdio loop", e);
+        }
+    }
+    
+    private JsonObject handleRequest(JsonObject request) {
+        String method = request.get("method").getAsString();
+        JsonObject params = request.has("params") ? request.getAsJsonObject("params") : new JsonObject();
         
-        LOGGER.info("MCP Server started on {}:{}", 
-            config.getServer().getHost(), 
-            config.getServer().getPort());
+        switch (method) {
+            case "initialize":
+                return requestHandler.handleInitialize(params);
+            case "ping":
+                return requestHandler.handlePing(params);
+            case "tools/list":
+                return requestHandler.handleToolsList(params);
+            case "tools/call":
+                return requestHandler.handleToolsCall(params);
+            default:
+                return createErrorResponse("Unknown method: " + method);
+        }
+    }
+    
+    private JsonObject createErrorResponse(String message) {
+        JsonObject response = new JsonObject();
+        response.addProperty("isError", true);
+        response.addProperty("error", message);
+        return response;
     }
     
     public void stop() {
-        if (httpServer != null) {
-            httpServer.stop(1);
+        if (running.get()) {
+            running.set(false);
+            if (serverThread != null) {
+                serverThread.interrupt();
+            }
             LOGGER.info("MCP Server stopped");
         }
     }

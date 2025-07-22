@@ -71,6 +71,34 @@ jar {
 	}
 }
 
+// Create a standalone JAR for the MCP server
+task standaloneJar(type: Jar) {
+	dependsOn classes
+	archiveClassifier = 'standalone'
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	
+	from sourceSets.main.output
+	from sourceSets.client.output
+	
+	// Include dependencies
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+	
+	manifest {
+		attributes 'Main-Class': 'cuspymd.mcp.mod.MCPStandaloneServer'
+	}
+	
+	// Exclude conflicting files
+	exclude 'META-INF/*.SF'
+	exclude 'META-INF/*.DSA'
+	exclude 'META-INF/*.RSA'
+	exclude 'META-INF/DEPENDENCIES'
+	exclude 'META-INF/LICENSE*'
+	exclude 'META-INF/NOTICE*'
+	exclude 'module-info.class'
+}
+
 // configure the maven publication
 publishing {
 	publications {
