@@ -87,9 +87,11 @@ public class MCPStandaloneServer {
                 try {
                     JsonObject request = JsonParser.parseString(line).getAsJsonObject();
                     JsonObject response = handleRequest(request);
-                    String responseStr = GSON.toJson(response);
-                    logToFile("Sending: " + responseStr);
-                    writer.println(responseStr);
+                    if (response != null) {
+                        String responseStr = GSON.toJson(response);
+                        logToFile("Sending: " + responseStr);
+                        writer.println(responseStr);
+                    }
                 } catch (Exception e) {
                     logToFile("Error processing request: " + line + " - " + e.getMessage());
                     Object requestId = null;
@@ -115,6 +117,12 @@ public class MCPStandaloneServer {
         String method = request.get("method").getAsString();
         JsonObject params = request.has("params") ? request.getAsJsonObject("params") : new JsonObject();
         Object requestId = request.has("id") ? request.get("id") : null;
+        
+        // Handle notifications - no response needed
+        if (method.startsWith("notifications/")) {
+            logToFile("Received notification: " + method);
+            return null;
+        }
         
         JsonObject result;
         switch (method) {
