@@ -18,19 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MCPStandaloneServer {
     private static final Gson GSON = new Gson();
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final String LOG_FILE_PATH = getJarDirectory() + File.separator + "standalone.log";
-    
-    private static String getJarDirectory() {
-        try {
-            String jarPath = MCPStandaloneServer.class.getProtectionDomain()
-                .getCodeSource().getLocation().toURI().getPath();
-            Path jarFile = Paths.get(jarPath);
-            return jarFile.getParent().toString();
-        } catch (Exception e) {
-            // Fallback to current directory
-            return System.getProperty("user.dir");
-        }
-    }
+    private static final String LOG_FILE_PATH = System.getProperty("user.home") + File.separator + "standalone.log";
     
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final IPCClient ipcClient;
