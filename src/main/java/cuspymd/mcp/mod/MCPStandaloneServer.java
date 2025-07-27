@@ -139,7 +139,7 @@ public class MCPStandaloneServer {
     
     private JsonObject handleInitialize(JsonObject params) {
         JsonObject response = new JsonObject();
-        response.addProperty("protocolVersion", "2024-11-05");
+        response.addProperty("protocolVersion", "2025-06-18");
         
         JsonObject capabilities = new JsonObject();
         capabilities.add("tools", new JsonObject());
