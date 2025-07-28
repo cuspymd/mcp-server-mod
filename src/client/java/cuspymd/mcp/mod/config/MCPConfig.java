@@ -55,6 +55,7 @@ public class MCPConfig {
     public SafetyConfig getSafety() { return safety; }
     
     public static class ServerConfig {
+        private String transport = "stdio"; // "stdio" or "http"
         private int port = 8080;
         private String host = "localhost";
         private boolean enableSafety = true;
@@ -63,6 +64,7 @@ public class MCPConfig {
         private int requestTimeoutMs = 30000;
         private boolean autoStart = true;
         
+        public String getTransport() { return transport; }
         public int getPort() { return port; }
         public String getHost() { return host; }
         public boolean isEnableSafety() { return enableSafety; }
