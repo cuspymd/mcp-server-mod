@@ -3,7 +3,8 @@
 	"package": "cuspymd.mcp.mod.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"ChatMessageCaptureMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

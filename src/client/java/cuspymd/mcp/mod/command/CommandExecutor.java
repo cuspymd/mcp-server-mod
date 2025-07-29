@@ -70,16 +70,35 @@ public class CommandExecutor {
         }
         
         List<CommandResult> results = new ArrayList<>();
-        StringBuilder successMessage = new StringBuilder();
-        successMessage.append("Executed ").append(commands.size()).append(" commands successfully:\n");
+        List<String> capturedMessages = new ArrayList<>();
         
-        for (int i = 0; i < commands.size(); i++) {
-            String command = commands.get(i);
-            try {
-                CommandResult result = executeCommand(command).get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
-                results.add(result);
-                
-                if (!result.isSuccess()) {
+        // Start capturing chat messages for all commands
+        ChatMessageCapture capture = ChatMessageCapture.getInstance();
+        capture.startCapturing();
+        
+        try {
+            for (int i = 0; i < commands.size(); i++) {
+                String command = commands.get(i);
+                try {
+                    CommandResult result = executeOneCommand(command).get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
+                    results.add(result);
+                    
+                    if (!result.isSuccess()) {
+                        capture.stopCapturing();
+                        JsonObject meta = new JsonObject();
+                        meta.addProperty("failed_command_index", i);
+                        meta.addProperty("failed_command", command);
+                        meta.addProperty("total_commands", commands.size());
+                        meta.addProperty("executed_commands", i);
+                        
+                        return MCPProtocol.createErrorResponse(
+                            "Command execution failed at command " + (i + 1) + ": " + result.getMessage(),
+                            meta
+                        );
+                    }
+                    
+                } catch (Exception e) {
+                    capture.stopCapturing();
                     JsonObject meta = new JsonObject();
                     meta.addProperty("failed_command_index", i);
                     meta.addProperty("failed_command", command);
@@ -87,38 +106,51 @@ public class CommandExecutor {
                     meta.addProperty("executed_commands", i);
                     
                     return MCPProtocol.createErrorResponse(
-                        "Command execution failed at command " + (i + 1) + ": " + result.getMessage(),
+                        "Command execution failed at command " + (i + 1) + ": " + e.getMessage(),
                         meta
                     );
                 }
-                
-                successMessage.append(i + 1).append(". ").append(command);
-                if (result.getBlocksAffected() > 0) {
-                    successMessage.append(" (").append(result.getBlocksAffected()).append(" blocks affected)");
-                }
-                if (result.getEntitiesAffected() > 0) {
-                    successMessage.append(" (").append(result.getEntitiesAffected()).append(" entities affected)");
-                }
-                successMessage.append("\n");
-                
-            } catch (Exception e) {
-                JsonObject meta = new JsonObject();
-                meta.addProperty("failed_command_index", i);
-                meta.addProperty("failed_command", command);
-                meta.addProperty("total_commands", commands.size());
-                meta.addProperty("executed_commands", i);
-                
-                return MCPProtocol.createErrorResponse(
-                    "Command execution failed at command " + (i + 1) + ": " + e.getMessage(),
-                    meta
-                );
             }
+            
+            // Wait for chat messages after all commands are executed
+            long totalWaitTime = Math.min(commands.size() * 200, 2000); // Max 2 seconds
+            long startTime = System.currentTimeMillis();
+            
+            while (System.currentTimeMillis() - startTime < totalWaitTime) {
+                try {
+                    String message = capture.waitForMessage(100);
+                    if (message != null) {
+                        capturedMessages.add(message);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            
+            capture.stopCapturing();
+            
+            // Build response with captured messages
+            StringBuilder responseMessage = new StringBuilder();
+            responseMessage.append("Executed ").append(commands.size()).append(" commands successfully");
+            
+            if (!capturedMessages.isEmpty()) {
+                responseMessage.append(":\n\n");
+                for (String message : capturedMessages) {
+                    responseMessage.append(message).append("\n");
+                }
+            } else {
+                responseMessage.append(". No chat responses captured.");
+            }
+            
+            return MCPProtocol.createSuccessResponse(responseMessage.toString().trim());
+            
+        } finally {
+            capture.stopCapturing();
         }
-        
-        return MCPProtocol.createSuccessResponse(successMessage.toString().trim());
     }
     
-    private CompletableFuture<CommandResult> executeCommand(String command) {
+    private CompletableFuture<CommandResult> executeOneCommand(String command) {
         return CompletableFuture.supplyAsync(() -> {
             long startTime = System.currentTimeMillis();
             
@@ -147,11 +179,15 @@ public class CommandExecutor {
                     }
                 });
                 
-                Thread.sleep(100);
+                // Small delay to allow command to execute
+                Thread.sleep(50);
+                
+                String resultMessage = "Command executed";
+                boolean success = true;
                 
                 return CommandResult.builder()
-                    .success(true)
-                    .message("Command executed successfully")
+                    .success(success)
+                    .message(resultMessage)
                     .originalCommand(command)
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .build();
