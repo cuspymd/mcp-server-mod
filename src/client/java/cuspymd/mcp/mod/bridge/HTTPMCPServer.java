@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpServer;
 import cuspymd.mcp.mod.command.CommandExecutor;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
+import cuspymd.mcp.mod.utils.PlayerInfoProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -279,6 +280,8 @@ public class HTTPMCPServer {
             
             if ("execute_commands".equals(toolName)) {
                 return commandExecutor.executeCommands(arguments);
+            } else if ("get_player_info".equals(toolName)) {
+                return handleGetPlayerInfo(arguments);
             } else {
                 JsonObject error = new JsonObject();
                 error.addProperty("isError", true);
@@ -291,6 +294,24 @@ public class HTTPMCPServer {
             error.addProperty("isError", true);
             error.addProperty("error", "Internal server error: " + e.getMessage());
             return error;
+        }
+    }
+    
+    private JsonObject handleGetPlayerInfo(JsonObject arguments) {
+        try {
+            JsonObject playerInfo = PlayerInfoProvider.getPlayerInfo();
+            
+            // Check if there was an error getting player info
+            if (playerInfo.has("error")) {
+                return MCPProtocol.createErrorResponse(playerInfo.get("error").getAsString(), null);
+            }
+            
+            // Create success response with player information
+            return MCPProtocol.createSuccessResponse(playerInfo.toString());
+            
+        } catch (Exception e) {
+            LOGGER.error("Error getting player info: {}", e.getMessage());
+            return MCPProtocol.createErrorResponse("Failed to get player information: " + e.getMessage(), null);
         }
     }
     

@@ -8,6 +8,7 @@ public class MCPProtocol {
     public static JsonArray getToolsListResponse() {
         JsonArray tools = new JsonArray();
         
+        // Execute commands tool
         JsonObject executeCommandsTool = new JsonObject();
         executeCommandsTool.addProperty("name", "execute_commands");
         executeCommandsTool.addProperty("description", "Execute one or more Minecraft commands sequentially");
@@ -41,6 +42,21 @@ public class MCPProtocol {
         
         executeCommandsTool.add("inputSchema", inputSchema);
         tools.add(executeCommandsTool);
+        
+        // Get player info tool
+        JsonObject getPlayerInfoTool = new JsonObject();
+        getPlayerInfoTool.addProperty("name", "get_player_info");
+        getPlayerInfoTool.addProperty("description", "Get comprehensive player information including: exact position (x,y,z) and block coordinates, facing direction (yaw/pitch/cardinal direction), calculated front position for building (3 blocks ahead), look vector, health and food status, game mode, dimension and time info, experience level, and inventory details (selected slot, main/off-hand items). Essential for accurate building placement and contextual command execution.");
+        
+        JsonObject playerInfoInputSchema = new JsonObject();
+        playerInfoInputSchema.addProperty("type", "object");
+        
+        JsonObject playerInfoProperties = new JsonObject();
+        // No required parameters for this tool
+        playerInfoInputSchema.add("properties", playerInfoProperties);
+        
+        getPlayerInfoTool.add("inputSchema", playerInfoInputSchema);
+        tools.add(getPlayerInfoTool);
         
         return tools;
     }
