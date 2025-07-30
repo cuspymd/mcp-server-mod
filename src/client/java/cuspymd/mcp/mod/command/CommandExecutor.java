@@ -132,7 +132,7 @@ public class CommandExecutor {
             
             // Build response with captured messages
             StringBuilder responseMessage = new StringBuilder();
-            responseMessage.append("Executed ").append(commands.size()).append(" commands successfully");
+            responseMessage.append("Executed ").append(commands.size()).append(" commands.");
             
             if (!capturedMessages.isEmpty()) {
                 responseMessage.append(":\n\n");
