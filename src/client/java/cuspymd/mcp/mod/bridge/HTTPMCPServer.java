@@ -268,7 +268,7 @@ public class HTTPMCPServer {
     
     private JsonObject handleToolsList(JsonObject params) {
         JsonObject response = new JsonObject();
-        response.add("tools", GSON.toJsonTree(MCPProtocol.getToolsList()));
+        response.add("tools", MCPProtocol.getToolsListResponse());
         return response;
     }
     
@@ -278,7 +278,7 @@ public class HTTPMCPServer {
             JsonObject arguments = params.getAsJsonObject("arguments");
             
             if ("execute_commands".equals(toolName)) {
-                return GSON.toJsonTree(commandExecutor.executeCommands(arguments)).getAsJsonObject();
+                return commandExecutor.executeCommands(arguments);
             } else {
                 JsonObject error = new JsonObject();
                 error.addProperty("isError", true);

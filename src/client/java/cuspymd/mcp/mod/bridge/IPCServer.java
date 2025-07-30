@@ -96,7 +96,7 @@ public class IPCServer {
         
         if ("execute_commands".equals(type)) {
             JsonObject arguments = request.getAsJsonObject("arguments");
-            return GSON.toJsonTree(commandExecutor.executeCommands(arguments)).getAsJsonObject();
+            return commandExecutor.executeCommands(arguments);
         } else {
             return createErrorResponse("Unknown IPC request type: " + type);
         }

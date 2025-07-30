@@ -25,7 +25,7 @@ public class CommandExecutor {
         this.safetyValidator = new SafetyValidator(config);
     }
     
-    public MCPProtocol.MCPResponse executeCommands(JsonObject arguments) {
+    public JsonObject executeCommands(JsonObject arguments) {
         try {
             JsonArray commandsArray = arguments.getAsJsonArray("commands");
             boolean validateSafety = !arguments.has("validate_safety") || 
@@ -63,7 +63,7 @@ public class CommandExecutor {
         }
     }
     
-    private MCPProtocol.MCPResponse executeCommandsSequentially(List<String> commands) {
+    private JsonObject executeCommandsSequentially(List<String> commands) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.world == null) {
             return MCPProtocol.createErrorResponse("Player or world is not available", null);
