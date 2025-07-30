@@ -180,10 +180,15 @@ public class MCPStandaloneServer {
             
             if ("execute_commands".equals(toolName)) {
                 if (!ipcClient.isConnected()) {
-                    JsonObject error = new JsonObject();
-                    error.addProperty("isError", true);
-                    error.addProperty("error", "Not connected to Minecraft client");
-                    return error;
+                    logToFile("IPC client not connected, attempting to reconnect...");
+                    boolean connected = ipcClient.connectAsync().get();
+                    if (!connected) {
+                        JsonObject error = new JsonObject();
+                        error.addProperty("isError", true);
+                        error.addProperty("error", "Failed to connect to Minecraft client");
+                        return error;
+                    }
+                    logToFile("Successfully reconnected to Minecraft IPC server");
                 }
                 return ipcClient.executeCommands(arguments);
             } else {
