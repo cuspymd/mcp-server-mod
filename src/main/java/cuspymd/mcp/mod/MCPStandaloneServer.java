@@ -169,7 +169,7 @@ public class MCPStandaloneServer {
     
     private JsonObject handleToolsList(JsonObject params) {
         JsonObject response = new JsonObject();
-        response.add("tools", MCPProtocol.getToolsListResponse());
+        response.add("tools", GSON.toJsonTree(MCPProtocol.getToolsList()));
         return response;
     }
     
