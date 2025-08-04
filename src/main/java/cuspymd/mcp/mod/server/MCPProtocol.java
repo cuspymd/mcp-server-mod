@@ -58,6 +58,64 @@ public class MCPProtocol {
         getPlayerInfoTool.add("inputSchema", playerInfoInputSchema);
         tools.add(getPlayerInfoTool);
         
+        // Get blocks in area tool
+        JsonObject getBlocksInAreaTool = new JsonObject();
+        getBlocksInAreaTool.addProperty("name", "get_blocks_in_area");
+        getBlocksInAreaTool.addProperty("description", "Get all non-air blocks in a specified area. Maximum area size per axis is limited (default: 50 blocks). Air blocks are excluded from results.");
+        
+        JsonObject blocksInputSchema = new JsonObject();
+        blocksInputSchema.addProperty("type", "object");
+        
+        JsonObject blocksProperties = new JsonObject();
+        
+        // From position
+        JsonObject fromProperty = new JsonObject();
+        fromProperty.addProperty("type", "object");
+        fromProperty.addProperty("description", "Starting position of the area to scan");
+        JsonObject fromPosProperties = new JsonObject();
+        JsonObject xProp = new JsonObject();
+        xProp.addProperty("type", "integer");
+        JsonObject yProp = new JsonObject();
+        yProp.addProperty("type", "integer");
+        JsonObject zProp = new JsonObject();
+        zProp.addProperty("type", "integer");
+        fromPosProperties.add("x", xProp);
+        fromPosProperties.add("y", yProp);
+        fromPosProperties.add("z", zProp);
+        fromProperty.add("properties", fromPosProperties);
+        JsonArray fromRequired = new JsonArray();
+        fromRequired.add("x");
+        fromRequired.add("y");
+        fromRequired.add("z");
+        fromProperty.add("required", fromRequired);
+        
+        // To position
+        JsonObject toProperty = new JsonObject();
+        toProperty.addProperty("type", "object");
+        toProperty.addProperty("description", "Ending position of the area to scan");
+        JsonObject toPosProperties = new JsonObject();
+        toPosProperties.add("x", xProp);
+        toPosProperties.add("y", yProp);
+        toPosProperties.add("z", zProp);
+        toProperty.add("properties", toPosProperties);
+        JsonArray toRequired = new JsonArray();
+        toRequired.add("x");
+        toRequired.add("y");
+        toRequired.add("z");
+        toProperty.add("required", toRequired);
+        
+        blocksProperties.add("from", fromProperty);
+        blocksProperties.add("to", toProperty);
+        blocksInputSchema.add("properties", blocksProperties);
+        
+        JsonArray blocksRequiredFields = new JsonArray();
+        blocksRequiredFields.add("from");
+        blocksRequiredFields.add("to");
+        blocksInputSchema.add("required", blocksRequiredFields);
+        
+        getBlocksInAreaTool.add("inputSchema", blocksInputSchema);
+        tools.add(getBlocksInAreaTool);
+        
         return tools;
     }
     

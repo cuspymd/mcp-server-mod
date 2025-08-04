@@ -10,6 +10,7 @@ import cuspymd.mcp.mod.command.CommandExecutor;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
 import cuspymd.mcp.mod.utils.PlayerInfoProvider;
+import cuspymd.mcp.mod.utils.BlockScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,6 +283,8 @@ public class HTTPMCPServer {
                 return commandExecutor.executeCommands(arguments);
             } else if ("get_player_info".equals(toolName)) {
                 return handleGetPlayerInfo(arguments);
+            } else if ("get_blocks_in_area".equals(toolName)) {
+                return handleGetBlocksInArea(arguments);
             } else {
                 JsonObject error = new JsonObject();
                 error.addProperty("isError", true);
@@ -312,6 +315,38 @@ public class HTTPMCPServer {
         } catch (Exception e) {
             LOGGER.error("Error getting player info: {}", e.getMessage());
             return MCPProtocol.createErrorResponse("Failed to get player information: " + e.getMessage(), null);
+        }
+    }
+    
+    private JsonObject handleGetBlocksInArea(JsonObject arguments) {
+        try {
+            if (!arguments.has("from") || !arguments.has("to")) {
+                return MCPProtocol.createErrorResponse("Missing required parameters: 'from' and 'to' positions", null);
+            }
+            
+            JsonObject fromPos = arguments.getAsJsonObject("from");
+            JsonObject toPos = arguments.getAsJsonObject("to");
+            
+            // Validate position objects have required coordinates
+            if (!fromPos.has("x") || !fromPos.has("y") || !fromPos.has("z") ||
+                !toPos.has("x") || !toPos.has("y") || !toPos.has("z")) {
+                return MCPProtocol.createErrorResponse("Position objects must contain x, y, z coordinates", null);
+            }
+            
+            int maxAreaSize = config.getServer().getMaxAreaSize();
+            JsonObject result = BlockScanner.scanBlocksInArea(fromPos, toPos, maxAreaSize);
+            
+            // Check if there was an error scanning blocks
+            if (result.has("error")) {
+                return MCPProtocol.createErrorResponse(result.get("error").getAsString(), null);
+            }
+            
+            // Create success response with block information
+            return MCPProtocol.createSuccessResponse(result.toString());
+            
+        } catch (Exception e) {
+            LOGGER.error("Error getting blocks in area: {}", e.getMessage());
+            return MCPProtocol.createErrorResponse("Failed to get blocks in area: " + e.getMessage(), null);
         }
     }
     
