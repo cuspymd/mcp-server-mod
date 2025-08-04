@@ -270,7 +270,7 @@ public class HTTPMCPServer {
     
     private JsonObject handleToolsList(JsonObject params) {
         JsonObject response = new JsonObject();
-        response.add("tools", MCPProtocol.getToolsListResponse());
+        response.add("tools", MCPProtocol.getToolsListResponse(config));
         return response;
     }
     

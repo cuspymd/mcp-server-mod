@@ -2,10 +2,11 @@ package cuspymd.mcp.mod.server;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import cuspymd.mcp.mod.config.MCPConfig;
 
 public class MCPProtocol {
     
-    public static JsonArray getToolsListResponse() {
+    public static JsonArray getToolsListResponse(MCPConfig config) {
         JsonArray tools = new JsonArray();
         
         // Execute commands tool
@@ -61,7 +62,8 @@ public class MCPProtocol {
         // Get blocks in area tool
         JsonObject getBlocksInAreaTool = new JsonObject();
         getBlocksInAreaTool.addProperty("name", "get_blocks_in_area");
-        getBlocksInAreaTool.addProperty("description", "Get all non-air blocks in a specified area. Maximum area size per axis is limited (default: 50 blocks). Air blocks are excluded from results.");
+        int maxAreaSize = config != null ? config.getServer().getMaxAreaSize() : 10;
+        getBlocksInAreaTool.addProperty("description", "Get all non-air blocks in a specified area. Maximum area size per axis is limited (current: " + maxAreaSize + " blocks). Air blocks are excluded from results.");
         
         JsonObject blocksInputSchema = new JsonObject();
         blocksInputSchema.addProperty("type", "object");
