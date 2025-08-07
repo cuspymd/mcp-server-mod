@@ -77,12 +77,6 @@ public class BlockScanner {
                 for (int y = minY; y <= maxY; y++) {
                     for (int z = minZ; z <= maxZ; z++) {
                         BlockPos pos = new BlockPos(x, y, z);
-                        
-                        // Skip if chunk is not loaded
-                        if (!world.isChunkLoaded(pos)) {
-                            continue;
-                        }
-                        
                         var blockState = world.getBlockState(pos);
                         
                         // Skip air blocks
