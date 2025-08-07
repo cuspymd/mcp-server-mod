@@ -39,6 +39,9 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
+	// JUnit for testing
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
@@ -51,6 +54,10 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
+}
+
+test {
+	useJUnitPlatform()
 }
 
 java {

@@ -8,6 +8,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BlockScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockScanner.class);
@@ -70,7 +72,7 @@ public class BlockScanner {
             result.add("area", areaInfo);
             
             // Scan blocks
-            JsonArray blocks = new JsonArray();
+            List<JsonObject> blockList = new ArrayList<>();
             int totalBlocks = 0;
             
             for (int x = minX; x <= maxX; x++) {
@@ -90,14 +92,17 @@ public class BlockScanner {
                         blockInfo.addProperty("z", z);
                         blockInfo.addProperty("type", blockState.getBlock().toString());
                         
-                        blocks.add(blockInfo);
+                        blockList.add(blockInfo);
                         totalBlocks++;
                     }
                 }
             }
             
+            // Compress blocks using BlockCompressor
+            JsonObject compressedBlocks = BlockCompressor.compressBlocks(blockList);
+            
             result.addProperty("total_blocks", totalBlocks);
-            result.add("blocks", blocks);
+            result.add("blocks", compressedBlocks.get("blocks"));
             
             LOGGER.info("Scanned area {}x{}x{}, found {} non-air blocks", sizeX, sizeY, sizeZ, totalBlocks);
             
