@@ -23,35 +23,46 @@ This is a Minecraft Fabric mod that implements an MCP (Model Context Protocol) s
 ### Code Quality
 ```bash
 ./gradlew check                # Run all checks and tests
+./gradlew test                 # Run unit tests only
 ```
 
 ## Architecture Overview
 
 ### Core Components
-- **MCPServerModClient**: Client-side entry point that starts the MCP HTTP server
-- **MCPServer**: HTTP server implementation (port 8080) that handles MCP protocol
-- **CommandExecutor**: Executes Minecraft commands with safety validation
-- **SafetyValidator**: Validates commands against security rules
+- **MCPServerModClient**: Client-side entry point that starts the HTTP MCP server
+- **HTTPMCPServer**: HTTP server implementation (port 8080) that handles MCP protocol
+- **CommandExecutor**: Executes Minecraft commands with safety validation and result capture
+- **SafetyValidator**: Validates commands against security rules and size limits
+- **BlockCompressor**: Optimizes block change representations by grouping connected regions
+- **BlockScanner**: Scans world areas to detect block changes and structures
 - **MCPConfig**: Configuration management for server settings and safety rules
 
 ### Package Structure
+The mod uses Fabric's split environment feature with separate client and main source sets:
+
 ```
-cuspymd.mcp.mod/
-├── MCPServerMod.java           # Main mod class (server-side)
-├── MCPServerModClient.java     # Client mod initializer
-├── server/                     # MCP HTTP server implementation
-│   ├── MCPServer.java
-│   ├── MCPRequestHandler.java
-│   └── MCPProtocol.java
-├── command/                    # Command execution system
-│   ├── CommandExecutor.java
-│   ├── SafetyValidator.java
-│   └── CommandResult.java
-├── config/                     # Configuration management
-│   └── MCPConfig.java
-└── utils/                      # Utility classes
-    ├── CommandParser.java
-    └── CoordinateUtils.java
+src/
+├── main/java/cuspymd/mcp/mod/   # Server-side code
+│   ├── MCPServerMod.java        # Main mod class
+│   ├── config/MCPConfig.java    # Configuration management
+│   ├── server/MCPProtocol.java  # MCP protocol definitions
+│   └── bridge/IPCClient.java    # Inter-process communication
+├── client/java/cuspymd/mcp/mod/ # Client-side code
+│   ├── MCPServerModClient.java  # Client mod initializer
+│   ├── bridge/HTTPMCPServer.java # HTTP server implementation
+│   ├── command/                 # Command execution system
+│   │   ├── CommandExecutor.java
+│   │   ├── SafetyValidator.java
+│   │   ├── CommandResult.java
+│   │   └── ChatMessageCapture.java
+│   └── utils/                   # Utility classes
+│       ├── BlockCompressor.java
+│       ├── BlockScanner.java
+│       ├── CommandParser.java
+│       ├── CoordinateUtils.java
+│       └── PlayerInfoProvider.java
+└── test/java/cuspymd/mcp/mod/   # Unit tests
+    └── BlockCompressorTest.java
 ```
 
 ## MCP Protocol Implementation
@@ -63,7 +74,12 @@ The mod implements the MCP (Model Context Protocol) with these endpoints:
 - `POST /mcp/tools/call` - Execute the `execute_commands` tool
 
 ### Primary Tool: execute_commands
-Executes Minecraft commands with safety validation. Commands are executed sequentially and results include affected block counts and entity spawns.
+Executes Minecraft commands with comprehensive safety validation. Commands are executed sequentially and results include:
+- Block changes with compressed representations for connected regions
+- Entity spawns and modifications
+- Chat messages captured during execution
+- Player position and dimension information
+- Execution timing and success status
 
 ## Safety System
 
@@ -96,8 +112,21 @@ Configuration is loaded at client initialization and can be modified at runtime.
 
 ## Development Notes
 
-- The mod is client-side focused - the HTTP server runs in the client
-- Commands are executed through Minecraft's command system
-- All command execution is validated for safety before execution
-- The mod auto-starts the MCP server when the client initializes (configurable)
+### Architecture Patterns
+- **Split Environment**: Uses Fabric's split environment feature with separate client/main source sets
+- **Client-focused**: The HTTP MCP server runs entirely in the Minecraft client
+- **Async Execution**: Commands executed asynchronously to prevent main thread blocking
+- **Result Compression**: Block changes are automatically compressed using connected component analysis
+
+### Testing
+- Unit tests use JUnit 5 (`org.junit.jupiter`)
+- Tests focus on utility classes like `BlockCompressor` 
+- Test coverage includes edge cases like L-shaped regions and vertical towers
+
+### Key Implementation Details
+- Commands are executed through Minecraft's built-in command system
+- Chat messages are captured via Mixin injection during command execution
+- Block changes are detected and compressed into regions vs. single blocks
+- All command execution includes comprehensive safety validation
+- Configuration auto-loads at client initialization and supports runtime modification
 - Log output uses SLF4J with mod ID "mcp-server-mod"

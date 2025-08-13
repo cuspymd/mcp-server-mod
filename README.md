@@ -70,7 +70,10 @@ Connect your AI assistant (like Claude) to the MCP server using the endpoint:
 http://localhost:8080/mcp
 ```
 
-The server supports the `execute_commands` tool for running Minecraft commands.
+The server supports three main tools:
+- `execute_commands` - Execute Minecraft commands with safety validation
+- `get_player_info` - Get comprehensive player information
+- `get_blocks_in_area` - Scan and retrieve blocks in a specified area
 
 ### Example Commands
 
@@ -159,6 +162,63 @@ Execute one or more Minecraft commands sequentially with safety validation.
   }
 }
 ```
+
+### Tool: get_player_info
+
+Get comprehensive player information including position, facing direction, health, inventory, and game state.
+
+**Parameters:** None required
+
+**Response includes:**
+- Exact position (x, y, z coordinates) and block coordinates
+- Facing direction (yaw, pitch, cardinal direction)  
+- Calculated front position for building (3 blocks ahead)
+- Look vector for directional calculations
+- Health, food, and experience status
+- Current game mode and dimension
+- World time information
+- Inventory details (selected slot, main/off-hand items)
+
+**Example Request:**
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "get_player_info",
+    "arguments": {}
+  }
+}
+```
+
+### Tool: get_blocks_in_area
+
+Scan and retrieve all non-air blocks within a specified rectangular area. Useful for analyzing structures or checking build areas.
+
+**Parameters:**
+- `from` (object): Starting position with x, y, z coordinates
+- `to` (object): Ending position with x, y, z coordinates
+
+**Response includes:**
+- List of all non-air blocks in the area
+- Block types and positions
+- Total block count
+- Area dimensions and validation info
+
+**Example Request:**
+```json
+{
+  "method": "tools/call", 
+  "params": {
+    "name": "get_blocks_in_area",
+    "arguments": {
+      "from": {"x": 100, "y": 64, "z": 200},
+      "to": {"x": 110, "y": 74, "z": 210}
+    }
+  }
+}
+```
+
+**Note:** Maximum area size per axis is limited by server configuration (default: 50 blocks).
 
 ## License
 
