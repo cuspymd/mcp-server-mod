@@ -1,6 +1,5 @@
 package cuspymd.mcp.mod.utils;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
