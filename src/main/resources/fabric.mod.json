@@ -3,13 +3,14 @@
 	"id": "mcp-server-mod",
 	"version": "${version}",
 	"name": "MCP Server Mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "A Fabric mod that implements an MCP (Model Context Protocol) server, enabling AI assistants like Claude to interact with Minecraft through structured commands.",
 	"authors": [
-		"Me!"
+		"cuspymd"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/cuspymd/mcp-server-mod",
+		"sources": "https://github.com/cuspymd/mcp-server-mod",
+		"issues": "https://github.com/cuspymd/mcp-server-mod/issues"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/mcp-server-mod/icon.png",
@@ -35,7 +36,4 @@
 		"java": ">=21",
 		"fabric-api": "*"
 	},
-	"suggests": {
-		"another-mod": "*"
-	}
 }
