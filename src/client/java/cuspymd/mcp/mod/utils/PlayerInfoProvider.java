@@ -68,7 +68,7 @@ public class PlayerInfoProvider {
         
         // Game mode
         if (client.interactionManager != null) {
-            playerInfo.addProperty("gameMode", client.interactionManager.getCurrentGameMode().getName());
+            playerInfo.addProperty("gameMode", client.interactionManager.getCurrentGameMode().name().toLowerCase());
         }
         
         // Dimension information
@@ -89,7 +89,7 @@ public class PlayerInfoProvider {
         
         // Inventory information
         JsonObject inventory = new JsonObject();
-        inventory.addProperty("selectedSlot", player.getInventory().selectedSlot);
+        inventory.addProperty("selectedSlot", player.getInventory().getSelectedSlot());
         inventory.addProperty("mainHandItem", player.getMainHandStack().isEmpty() ? "empty" : 
             player.getMainHandStack().getItem().toString());
         inventory.addProperty("offHandItem", player.getOffHandStack().isEmpty() ? "empty" : 
