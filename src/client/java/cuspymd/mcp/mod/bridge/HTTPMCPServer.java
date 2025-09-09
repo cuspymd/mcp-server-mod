@@ -137,7 +137,7 @@ public class HTTPMCPServer {
                 }
                 
             } catch (Exception e) {
-                LOGGER.error("Error processing MCP request: " + requestBody, e);
+                LOGGER.error("Error processing MCP request: {}", requestBody, e);
                 Integer requestId = null;
                 try {
                     JsonObject request = JsonParser.parseString(requestBody).getAsJsonObject();
@@ -222,10 +222,10 @@ public class HTTPMCPServer {
                 result = handleInitialize(params);
                 break;
             case "ping":
-                result = handlePing(params);
+                result = handlePing();
                 break;
             case "tools/list":
-                result = handleToolsList(params);
+                result = handleToolsList();
                 break;
             case "tools/call":
                 result = handleToolsCall(params);
@@ -262,13 +262,13 @@ public class HTTPMCPServer {
         return response;
     }
     
-    private JsonObject handlePing(JsonObject params) {
+    private JsonObject handlePing() {
         JsonObject response = new JsonObject();
         response.addProperty("status", "pong");
         return response;
     }
     
-    private JsonObject handleToolsList(JsonObject params) {
+    private JsonObject handleToolsList() {
         JsonObject response = new JsonObject();
         response.add("tools", MCPProtocol.getToolsListResponse(config));
         return response;
@@ -278,18 +278,23 @@ public class HTTPMCPServer {
         try {
             String toolName = params.get("name").getAsString();
             JsonObject arguments = params.getAsJsonObject("arguments");
-            
-            if ("execute_commands".equals(toolName)) {
-                return commandExecutor.executeCommands(arguments);
-            } else if ("get_player_info".equals(toolName)) {
-                return handleGetPlayerInfo(arguments);
-            } else if ("get_blocks_in_area".equals(toolName)) {
-                return handleGetBlocksInArea(arguments);
-            } else {
-                JsonObject error = new JsonObject();
-                error.addProperty("isError", true);
-                error.addProperty("error", "Unknown tool: " + toolName);
-                return error;
+
+            switch (toolName) {
+                case "execute_commands" -> {
+                    return commandExecutor.executeCommands(arguments);
+                }
+                case "get_player_info" -> {
+                    return handleGetPlayerInfo();
+                }
+                case "get_blocks_in_area" -> {
+                    return handleGetBlocksInArea(arguments);
+                }
+                case null, default -> {
+                    JsonObject error = new JsonObject();
+                    error.addProperty("isError", true);
+                    error.addProperty("error", "Unknown tool: " + toolName);
+                    return error;
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Error handling tools/call request: {}", e.getMessage());
@@ -300,7 +305,7 @@ public class HTTPMCPServer {
         }
     }
     
-    private JsonObject handleGetPlayerInfo(JsonObject arguments) {
+    private JsonObject handleGetPlayerInfo() {
         try {
             JsonObject playerInfo = PlayerInfoProvider.getPlayerInfo();
             
