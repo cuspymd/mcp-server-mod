@@ -138,10 +138,10 @@ public class HTTPMCPServer {
                 
             } catch (Exception e) {
                 LOGGER.error("Error processing MCP request: " + requestBody, e);
-                Object requestId = null;
+                Integer requestId = null;
                 try {
                     JsonObject request = JsonParser.parseString(requestBody).getAsJsonObject();
-                    requestId = request.has("id") ? request.get("id") : null;
+                    requestId = request.has("id") ? request.get("id").getAsInt() : null;
                 } catch (Exception ignored) {
                     // Unable to parse request ID
                 }
@@ -156,7 +156,7 @@ public class HTTPMCPServer {
             if (accept != null && accept.contains("text/event-stream")) {
                 // For now, we'll just send a simple response indicating SSE is not fully implemented
                 // In a full implementation, this would open an SSE stream
-                sendErrorResponse(exchange, 501, "Server-Sent Events not implemented", null);
+                sendErrorResponse(exchange, 405, "Server-Sent Events not implemented", null);
             } else {
                 sendErrorResponse(exchange, 400, "GET requests require text/event-stream Accept header", null);
             }
@@ -189,7 +189,7 @@ public class HTTPMCPServer {
             }
         }
         
-        private void sendErrorResponse(HttpExchange exchange, int statusCode, String message, Object requestId) throws IOException {
+        private void sendErrorResponse(HttpExchange exchange, int statusCode, String message, Integer requestId) throws IOException {
             JsonObject errorResponse = createErrorResponse(message, requestId);
             sendJsonResponse(exchange, statusCode, errorResponse);
         }
@@ -208,7 +208,7 @@ public class HTTPMCPServer {
     private JsonObject handleMCPRequest(JsonObject request) {
         String method = request.get("method").getAsString();
         JsonObject params = request.has("params") ? request.getAsJsonObject("params") : new JsonObject();
-        Object requestId = request.has("id") ? request.get("id") : null;
+        Integer requestId = request.has("id") ? request.get("id").getAsInt() : null;
         
         // Handle notifications - no response needed
         if (method.startsWith("notifications/")) {
@@ -350,29 +350,21 @@ public class HTTPMCPServer {
         }
     }
     
-    private JsonObject createSuccessResponse(JsonObject result, Object requestId) {
+    private JsonObject createSuccessResponse(JsonObject result, Integer requestId) {
         JsonObject response = new JsonObject();
         response.addProperty("jsonrpc", "2.0");
         if (requestId != null) {
-            if (requestId instanceof Number) {
-                response.addProperty("id", ((Number) requestId).intValue());
-            } else {
-                response.addProperty("id", requestId.toString());
-            }
+            response.addProperty("id", requestId);
         }
         response.add("result", result);
         return response;
     }
     
-    private JsonObject createErrorResponse(String message, Object requestId) {
+    private JsonObject createErrorResponse(String message, Integer requestId) {
         JsonObject response = new JsonObject();
         response.addProperty("jsonrpc", "2.0");
         if (requestId != null) {
-            if (requestId instanceof Number) {
-                response.addProperty("id", ((Number) requestId).intValue());
-            } else {
-                response.addProperty("id", requestId.toString());
-            }
+            response.addProperty("id", requestId);
         }
         
         JsonObject error = new JsonObject();
