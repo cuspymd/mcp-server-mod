@@ -53,7 +53,8 @@ public class PlayerInfoProvider {
         playerInfo.add("lookVector", lookVector);
         
         // Calculate position in front of player (useful for building)
-        Vec3d frontPos = player.getPos().add(lookVec.multiply(3.0)); // 3 blocks in front
+        Vec3d playerPos = new Vec3d(player.getX(), player.getY(), player.getZ());
+        Vec3d frontPos = playerPos.add(lookVec.multiply(3.0)); // 3 blocks in front
         JsonObject frontPosition = new JsonObject();
         frontPosition.addProperty("x", (int) Math.floor(frontPos.x));
         frontPosition.addProperty("y", (int) Math.floor(frontPos.y));
