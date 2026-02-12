@@ -22,8 +22,8 @@ public class MCPProtocol {
             "- Trapdoors: setblock X Y Z oak_trapdoor[facing=north,half=top,open=false]\n" +
             "- Fences/Walls: placed adjacently they auto-connect\n" +
             "- Logs/Pillars: setblock X Y Z oak_log[axis=y] (y=vertical, x/z=horizontal)\n" +
-            "- Glazed Terracotta/Banners: [facing=north/south/east/west]\n" +
-            "- Beds: setblock X Y Z red_bed[facing=south,part=foot] then setblock X Y Z-1 red_bed[facing=south,part=head]\n" +
+            "- Glazed Terracotta: [facing=north/south/east/west]\n" +
+            "- Beds: setblock X Y Z red_bed[facing=south,part=foot] then setblock X Y Z+1 red_bed[facing=south,part=head] (head goes in facing direction: south=+Z, north=-Z, east=+X, west=-X)\n" +
             "- Chests: setblock X Y Z chest[facing=north]\n" +
             "- Torches: torch (floor), wall_torch[facing=north] (wall)\n" +
             "- Lanterns: lantern[hanging=true/false]\n" +
@@ -43,7 +43,7 @@ public class MCPProtocol {
             "6. Roofs: use stairs with correct facing for sloped roofs, slabs for flat roofs\n" +
             "7. After building, ALWAYS verify with get_blocks_in_area to check for errors\n" +
             "8. Group related commands in one call (e.g., all wall commands together) for efficiency\n" +
-            "9. Max fill volume: 125000 blocks per command. Max entities per summon: 10"
+            "9. Max fill volume: 32768 blocks per command (Minecraft limit). Max entities per summon: 10"
         );
 
         JsonObject inputSchema = new JsonObject();
