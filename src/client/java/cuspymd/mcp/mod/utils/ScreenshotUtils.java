@@ -11,11 +11,26 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ScreenshotUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScreenshotUtils.class);
+    private static final List<DeferredTask> pendingDeferredTasks = Collections.synchronizedList(new ArrayList<>());
+
+    private static class DeferredTask {
+        Runnable runnable;
+        int remainingTicks;
+
+        DeferredTask(Runnable runnable, int ticks) {
+            this.runnable = runnable;
+            this.remainingTicks = ticks;
+        }
+    }
 
     /**
      * Takes a screenshot of the current Minecraft game screen.
@@ -76,8 +91,9 @@ public class ScreenshotUtils {
             // If we moved the player or changed their view, we MUST wait for the next frame
             // so that the render loop can update the framebuffer with the new view.
             if (moved) {
-                // Execute in the next frame
-                client.execute(() -> captureNow(client, future));
+                // Defer capture to ensure the world is rendered with the new view.
+                // We wait for 2 end-of-tick events to be certain a render has completed.
+                pendingDeferredTasks.add(new DeferredTask(() -> captureNow(client, future), 2));
             } else {
                 // Take screenshot immediately if no movement occurred
                 captureNow(client, future);
@@ -85,6 +101,27 @@ public class ScreenshotUtils {
         } catch (Exception e) {
             LOGGER.error("Unexpected error taking screenshot", e);
             future.completeExceptionally(e);
+        }
+    }
+
+    /**
+     * Called by ClientTickEvents.END_CLIENT_TICK to process deferred screenshot tasks.
+     */
+    public static void onEndTick(MinecraftClient client) {
+        synchronized (pendingDeferredTasks) {
+            Iterator<DeferredTask> it = pendingDeferredTasks.iterator();
+            while (it.hasNext()) {
+                DeferredTask task = it.next();
+                task.remainingTicks--;
+                if (task.remainingTicks <= 0) {
+                    try {
+                        task.runnable.run();
+                    } catch (Exception e) {
+                        LOGGER.error("Error executing deferred screenshot task", e);
+                    }
+                    it.remove();
+                }
+            }
         }
     }
 
