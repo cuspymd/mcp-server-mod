@@ -67,7 +67,16 @@ public class ScreenshotUtils {
 
             // Handle teleportation if coordinates are provided
             boolean moved = false;
-            if (params.has("x") && params.has("y") && params.has("z")) {
+            boolean hasX = params.has("x");
+            boolean hasY = params.has("y");
+            boolean hasZ = params.has("z");
+
+            if (hasX || hasY || hasZ) {
+                if (!(hasX && hasY && hasZ)) {
+                    future.completeExceptionally(new Exception("Partial coordinates provided. You must provide all three: x, y, and z."));
+                    return;
+                }
+
                 double x = params.get("x").getAsDouble();
                 double y = params.get("y").getAsDouble();
                 double z = params.get("z").getAsDouble();

@@ -361,8 +361,10 @@ public class HTTPMCPServer {
 
     private JsonObject handleTakeScreenshot(JsonObject arguments) {
         try {
+            // Treat null arguments as an empty object
+            JsonObject params = arguments != null ? arguments : new JsonObject();
             // Wait for screenshot completion (this runs on an executor thread, not the render thread)
-            String base64Data = ScreenshotUtils.takeScreenshot(arguments).get();
+            String base64Data = ScreenshotUtils.takeScreenshot(params).get();
             return MCPProtocol.createImageResponse(base64Data, "image/png");
         } catch (Exception e) {
             LOGGER.error("Error taking screenshot: {}", e.getMessage());
