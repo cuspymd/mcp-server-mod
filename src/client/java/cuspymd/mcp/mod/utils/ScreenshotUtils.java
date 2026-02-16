@@ -65,18 +65,20 @@ public class ScreenshotUtils {
                 return;
             }
 
+            // Validate coordinates
+            String validationError = validateCoordinates(params);
+            if (validationError != null) {
+                future.completeExceptionally(new Exception(validationError));
+                return;
+            }
+
             // Handle teleportation if coordinates are provided
             boolean moved = false;
             boolean hasX = params.has("x");
             boolean hasY = params.has("y");
             boolean hasZ = params.has("z");
 
-            if (hasX || hasY || hasZ) {
-                if (!(hasX && hasY && hasZ)) {
-                    future.completeExceptionally(new Exception("Partial coordinates provided. You must provide all three: x, y, and z."));
-                    return;
-                }
-
+            if (hasX && hasY && hasZ) {
                 double x = params.get("x").getAsDouble();
                 double y = params.get("y").getAsDouble();
                 double z = params.get("z").getAsDouble();
@@ -115,6 +117,21 @@ public class ScreenshotUtils {
             LOGGER.error("Unexpected error taking screenshot", e);
             future.completeExceptionally(e);
         }
+    }
+
+    /**
+     * Validates that if any coordinate is provided, all three (x, y, z) are provided.
+     * @return null if valid, or an error message if invalid.
+     */
+    static String validateCoordinates(JsonObject params) {
+        boolean hasX = params.has("x");
+        boolean hasY = params.has("y");
+        boolean hasZ = params.has("z");
+
+        if ((hasX || hasY || hasZ) && !(hasX && hasY && hasZ)) {
+            return "Partial coordinates provided. You must provide all three: x, y, and z.";
+        }
+        return null;
     }
 
     /**
