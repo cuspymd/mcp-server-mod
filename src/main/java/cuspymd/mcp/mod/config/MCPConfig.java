@@ -78,10 +78,12 @@ public class MCPConfig {
         private boolean showNotifications = true;
         private String logLevel = "INFO";
         private boolean logCommands = false;
+        private boolean saveScreenshotsForDebug = false;
         
         public boolean isShowNotifications() { return showNotifications; }
         public String getLogLevel() { return logLevel; }
         public boolean isLogCommands() { return logCommands; }
+        public boolean isSaveScreenshotsForDebug() { return saveScreenshotsForDebug; }
     }
     
     public static class SafetyConfig {

@@ -1,6 +1,8 @@
 package cuspymd.mcp.mod.utils;
 
 import com.google.gson.JsonObject;
+import cuspymd.mcp.mod.config.MCPConfig;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.texture.NativeImage;
@@ -11,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -125,6 +129,24 @@ public class ScreenshotUtils {
         }
     }
 
+    private static void saveDebugScreenshot(Path tempFile) {
+        try {
+            Path gameDir = FabricLoader.getInstance().getGameDir();
+            Path debugDir = gameDir.resolve("mcp_debug_screenshots");
+            if (!Files.exists(debugDir)) {
+                Files.createDirectories(debugDir);
+            }
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
+            Path targetFile = debugDir.resolve("screenshot_" + timestamp + ".png");
+
+            Files.copy(tempFile, targetFile);
+            LOGGER.info("Saved debug screenshot to: {}", targetFile.toAbsolutePath());
+        } catch (IOException e) {
+            LOGGER.error("Failed to save debug screenshot", e);
+        }
+    }
+
     /**
      * Captures the current framebuffer and completes the future with the Base64 data.
      */
@@ -134,7 +156,11 @@ public class ScreenshotUtils {
 
             ScreenshotRecorder.takeScreenshot(framebuffer, (nativeImage) -> {
                 Path tempFile = null;
+                boolean shouldSaveDebug = false;
                 try {
+                    MCPConfig config = MCPConfig.load();
+                    shouldSaveDebug = config.getClient().isSaveScreenshotsForDebug();
+
                     // Create a temporary file to save the PNG
                     tempFile = Files.createTempFile("mcp_screenshot", ".png");
                     nativeImage.writeTo(tempFile);
@@ -142,6 +168,11 @@ public class ScreenshotUtils {
                     // Read the file bytes and encode to Base64
                     byte[] bytes = Files.readAllBytes(tempFile);
                     String base64 = Base64.getEncoder().encodeToString(bytes);
+
+                    // If debug mode is on, save a permanent copy
+                    if (shouldSaveDebug) {
+                        saveDebugScreenshot(tempFile);
+                    }
 
                     future.complete(base64);
                 } catch (IOException e) {
