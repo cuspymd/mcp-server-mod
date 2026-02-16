@@ -11,6 +11,7 @@ import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
 import cuspymd.mcp.mod.utils.PlayerInfoProvider;
 import cuspymd.mcp.mod.utils.BlockScanner;
+import cuspymd.mcp.mod.utils.ScreenshotUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -289,6 +290,9 @@ public class HTTPMCPServer {
                 case "get_blocks_in_area" -> {
                     return handleGetBlocksInArea(arguments);
                 }
+                case "take_screenshot" -> {
+                    return handleTakeScreenshot(arguments);
+                }
                 case null, default -> {
                     JsonObject error = new JsonObject();
                     error.addProperty("isError", true);
@@ -352,6 +356,18 @@ public class HTTPMCPServer {
         } catch (Exception e) {
             LOGGER.error("Error getting blocks in area: {}", e.getMessage());
             return MCPProtocol.createErrorResponse("Failed to get blocks in area: " + e.getMessage(), null);
+        }
+    }
+
+    private JsonObject handleTakeScreenshot(JsonObject arguments) {
+        try {
+            // Wait for screenshot completion (this runs on an executor thread, not the render thread)
+            String base64Data = ScreenshotUtils.takeScreenshot(arguments).get();
+            return MCPProtocol.createImageResponse(base64Data, "image/png");
+        } catch (Exception e) {
+            LOGGER.error("Error taking screenshot: {}", e.getMessage());
+            String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            return MCPProtocol.createErrorResponse("Failed to take screenshot: " + errorMessage, null);
         }
     }
     
