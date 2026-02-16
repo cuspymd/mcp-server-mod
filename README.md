@@ -52,7 +52,8 @@ The mod creates a configuration file at `config/mcp-client.json`:
     "auto_start": true,
     "show_notifications": true,
     "log_level": "INFO",
-    "log_commands": false
+    "log_commands": false,
+    "save_screenshots_for_debug": false
   },
   "safety": {
     "max_entities_per_command": 10,
@@ -74,6 +75,7 @@ The server supports three main tools:
 - `execute_commands` - Execute Minecraft commands with safety validation
 - `get_player_info` - Get comprehensive player information
 - `get_blocks_in_area` - Scan and retrieve blocks in a specified area
+- `take_screenshot` - Capture game screen with optional camera control
 
 ### Example Commands
 
@@ -219,6 +221,49 @@ Scan and retrieve all non-air blocks within a specified rectangular area. Useful
 ```
 
 **Note:** Maximum area size per axis is limited by server configuration (default: 50 blocks).
+
+### Tool: take_screenshot
+
+Capture a screenshot of the current Minecraft game screen. Optionally, you can specify coordinates and rotation to move the player and set their gaze before taking the screenshot.
+
+**Parameters:**
+- `x` (number, optional): X coordinate to teleport the player to.
+- `y` (number, optional): Y coordinate to teleport the player to.
+- `z` (number, optional): Z coordinate to teleport the player to.
+- `yaw` (number, optional): Yaw rotation (0-360) for horizontal view.
+- `pitch` (number, optional): Pitch rotation (-90 to 90) for vertical view.
+
+**Response includes:**
+- Base64 encoded PNG image data.
+- MIME type (`image/png`).
+
+**Example Request:**
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "take_screenshot",
+    "arguments": {
+      "x": 120.5,
+      "y": 70,
+      "z": -200.5,
+      "yaw": 180,
+      "pitch": 0
+    }
+  }
+}
+```
+
+## Debugging
+
+### Local Screenshot Storage
+
+For debugging purposes, you can enable local saving of every screenshot captured by the MCP server.
+
+1. Open `config/mcp-client.json`.
+2. Set `"save_screenshots_for_debug": true` in the `client` section.
+3. Screenshots will be saved to the `mcp_debug_screenshots/` directory in your Minecraft instance folder.
+4. Files are named using the pattern: `screenshot_YYYYMMDD_HHMMSS_SSS.png`.
 
 ## License
 
