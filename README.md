@@ -274,7 +274,7 @@ This project is licensed under the CC0-1.0 License.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly (See [TESTING.md](TESTING.md) for more info)
 5. Submit a pull request
 
 ## Support

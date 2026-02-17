@@ -24,9 +24,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class ScreenshotUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScreenshotUtils.class);
-    private static final List<DeferredTask> pendingDeferredTasks = Collections.synchronizedList(new ArrayList<>());
+    static final List<DeferredTask> pendingDeferredTasks = Collections.synchronizedList(new ArrayList<>());
 
-    private static class DeferredTask {
+    static class DeferredTask {
         Runnable runnable;
         int remainingTicks;
 
@@ -155,6 +155,19 @@ public class ScreenshotUtils {
         }
     }
 
+    /**
+     * Encodes raw byte array to Base64 string.
+     * Extracted for unit testing purposes.
+     */
+    static String encodeBytesToBase64(byte[] bytes) {
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    /**
+     * Saves a copy of the screenshot to a debug directory.
+     * Note: This method depends on FabricLoader and cannot be easily unit tested
+     * in a headless environment.
+     */
     private static void saveDebugScreenshot(Path tempFile) {
         try {
             Path gameDir = FabricLoader.getInstance().getGameDir();
@@ -175,9 +188,12 @@ public class ScreenshotUtils {
 
     /**
      * Captures the current framebuffer and completes the future with the Base64 data.
+     * Note: This method depends on the Minecraft rendering engine and can only be
+     * fully tested in a live game environment.
      */
     private static void captureNow(MinecraftClient client, CompletableFuture<String> future) {
         try {
+            // Framebuffer access requires a valid OpenGL context, usually only available in the game process
             Framebuffer framebuffer = client.getFramebuffer();
 
             ScreenshotRecorder.takeScreenshot(framebuffer, (nativeImage) -> {
@@ -193,7 +209,7 @@ public class ScreenshotUtils {
 
                     // Read the file bytes and encode to Base64
                     byte[] bytes = Files.readAllBytes(tempFile);
-                    String base64 = Base64.getEncoder().encodeToString(bytes);
+                    String base64 = encodeBytesToBase64(bytes);
 
                     // If debug mode is on, save a permanent copy
                     if (shouldSaveDebug) {
