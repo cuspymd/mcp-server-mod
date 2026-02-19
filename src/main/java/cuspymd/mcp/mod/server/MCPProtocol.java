@@ -3,18 +3,25 @@ package cuspymd.mcp.mod.server;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.config.MCPConfig;
+import cuspymd.mcp.mod.safety.CommandSafetyPolicy;
+import java.util.List;
 
 public class MCPProtocol {
     
     public static JsonArray getToolsListResponse(MCPConfig config) {
         JsonArray tools = new JsonArray();
+        List<String> configuredAllowedCommands = (config != null && config.getServer() != null && config.getServer().getAllowedCommands() != null)
+            ? config.getServer().getAllowedCommands()
+            : List.of("fill", "clone", "setblock", "summon", "tp", "give", "gamemode", "effect", "enchant", "weather", "time", "say", "tell", "title");
+        List<String> allowedCommands = CommandSafetyPolicy.filterAllowedCommands(configuredAllowedCommands);
+        String allowedCommandsText = allowedCommands.isEmpty() ? "(none configured)" : String.join(", ", allowedCommands);
         
         // Execute commands tool
         JsonObject executeCommandsTool = new JsonObject();
         executeCommandsTool.addProperty("name", "execute_commands");
         executeCommandsTool.addProperty("description",
             "Execute one or more Minecraft commands sequentially. " +
-            "Allowed commands: fill, clone, setblock, summon, tp, give, gamemode, effect, enchant, weather, time, say, tell, title.\n\n" +
+            "Allowed commands: " + allowedCommandsText + ".\n\n" +
             "BLOCK STATE SYNTAX (critical for quality builds):\n" +
             "- Doors: setblock X Y Z oak_door[facing=north,half=lower,hinge=left,open=false] then setblock X Y+1 Z oak_door[facing=north,half=upper,hinge=left,open=false]\n" +
             "- Stairs: setblock X Y Z oak_stairs[facing=east,half=bottom,shape=straight]\n" +
