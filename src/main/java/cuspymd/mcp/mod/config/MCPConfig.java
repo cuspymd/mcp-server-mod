@@ -59,7 +59,7 @@ public class MCPConfig {
         private int port = 8080;
         private String host = "localhost";
         private boolean enableSafety = true;
-        private int maxAreaSize = 48;
+        private int maxAreaSize = 10;
         private List<String> allowedCommands = List.of("fill", "clone", "setblock", "summon", "tp", "give", "gamemode", "effect", "enchant", "weather", "time", "say", "tell", "title");
         private int requestTimeoutMs = 30000;
         private boolean autoStart = true;
@@ -78,10 +78,12 @@ public class MCPConfig {
         private boolean showNotifications = true;
         private String logLevel = "INFO";
         private boolean logCommands = false;
+        private boolean saveScreenshotsForDebug = false;
         
         public boolean isShowNotifications() { return showNotifications; }
         public String getLogLevel() { return logLevel; }
         public boolean isLogCommands() { return logCommands; }
+        public boolean isSaveScreenshotsForDebug() { return saveScreenshotsForDebug; }
     }
     
     public static class SafetyConfig {

@@ -4,6 +4,8 @@ import net.fabricmc.api.ClientModInitializer;
 import cuspymd.mcp.mod.bridge.IPCServer;
 import cuspymd.mcp.mod.bridge.HTTPMCPServer;
 import cuspymd.mcp.mod.config.MCPConfig;
+import cuspymd.mcp.mod.utils.ScreenshotUtils;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,9 @@ public class MCPServerModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		LOGGER.info("Initializing Minecraft MCP Client");
+
+		// Register tick end event for deferred screenshots
+		ClientTickEvents.END_CLIENT_TICK.register(ScreenshotUtils::onEndTick);
 		
 		try {
 			MCPConfig config = MCPConfig.load();
