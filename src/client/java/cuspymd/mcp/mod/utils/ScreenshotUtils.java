@@ -20,16 +20,11 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 public class ScreenshotUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScreenshotUtils.class);
     static final List<DeferredTask> pendingDeferredTasks = Collections.synchronizedList(new ArrayList<>());
-    private static final int VIEW_UPDATE_TICKS = 2;
-    private static final int TELEPORT_SETTLE_TICKS = 3;
-    private static final double TELEPORT_POSITION_TOLERANCE = 0.75;
-    private static final float ROTATION_TOLERANCE_DEGREES = 2.0f;
 
     static class DeferredTask {
         Runnable runnable;
@@ -92,64 +87,31 @@ public class ScreenshotUtils {
                 float yaw = params.has("yaw") ? params.get("yaw").getAsFloat() : client.player.getYaw();
                 float pitch = params.has("pitch") ? params.get("pitch").getAsFloat() : client.player.getPitch();
 
-                if (client.getNetworkHandler() == null) {
-                    future.completeExceptionally(new Exception("Network handler is unavailable. Cannot execute server-authoritative teleport."));
-                    return;
-                }
-
-                String tpCommand = buildTeleportCommand(x, y, z, yaw, pitch);
-                client.getNetworkHandler().sendChatCommand(tpCommand);
-                LOGGER.info("Requested server-authoritative teleport via command: /{}", tpCommand);
+                // Teleport the player
+                client.player.refreshPositionAndAngles(x, y, z, yaw, pitch);
+                LOGGER.info("Teleported player to {} {} {} (yaw: {}, pitch: {}) for screenshot", x, y, z, yaw, pitch);
                 moved = true;
-
-                // Wait a bit longer for server sync, then validate location before capture.
-                pendingDeferredTasks.add(new DeferredTask(() -> {
-                    if (!isNearPosition(client, x, y, z, TELEPORT_POSITION_TOLERANCE)) {
-                        future.completeExceptionally(new Exception(
-                                "Teleport did not apply on the server. Check command permissions/op level for /tp."
-                        ));
-                        return;
-                    }
-                    captureNow(client, future);
-                }, TELEPORT_SETTLE_TICKS));
             } else {
                 // Handle only rotation if coordinates are not provided but rotation is
-                if (params.has("yaw") || params.has("pitch")) {
-                    if (client.getNetworkHandler() == null) {
-                        future.completeExceptionally(new Exception("Network handler is unavailable. Cannot execute server-authoritative rotation."));
-                        return;
-                    }
-
-                    float yaw = params.has("yaw") ? params.get("yaw").getAsFloat() : client.player.getYaw();
-                    float pitch = params.has("pitch") ? params.get("pitch").getAsFloat() : client.player.getPitch();
-                    String rotateCommand = buildRotateCommand(yaw, pitch);
-                    client.getNetworkHandler().sendChatCommand(rotateCommand);
-                    LOGGER.info("Requested server-authoritative rotation via command: /{}", rotateCommand);
+                if (params.has("yaw")) {
+                    client.player.setYaw(params.get("yaw").getAsFloat());
                     moved = true;
-
-                    pendingDeferredTasks.add(new DeferredTask(() -> {
-                        if (!isNearRotation(client, yaw, pitch, ROTATION_TOLERANCE_DEGREES)) {
-                            future.completeExceptionally(new Exception(
-                                    "Rotation did not apply on the server. Check command permissions/op level for /tp."
-                            ));
-                            return;
-                        }
-                        captureNow(client, future);
-                    }, TELEPORT_SETTLE_TICKS));
+                }
+                if (params.has("pitch")) {
+                    client.player.setPitch(params.get("pitch").getAsFloat());
+                    moved = true;
                 }
             }
 
             // If we moved the player or changed their view, we MUST wait for the next frame
             // so that the render loop can update the framebuffer with the new view.
-            if (moved && !(hasX && hasY && hasZ)) {
+            if (moved) {
                 // Defer capture to ensure the world is rendered with the new view.
                 // We wait for 2 end-of-tick events to be certain a render has completed.
-                pendingDeferredTasks.add(new DeferredTask(() -> captureNow(client, future), VIEW_UPDATE_TICKS));
+                pendingDeferredTasks.add(new DeferredTask(() -> captureNow(client, future), 2));
             } else {
                 // Take screenshot immediately if no movement occurred
-                if (!moved) {
-                    captureNow(client, future);
-                }
+                captureNow(client, future);
             }
         } catch (Exception e) {
             LOGGER.error("Unexpected error taking screenshot", e);
@@ -199,47 +161,6 @@ public class ScreenshotUtils {
      */
     static String encodeBytesToBase64(byte[] bytes) {
         return Base64.getEncoder().encodeToString(bytes);
-    }
-
-    static String buildTeleportCommand(double x, double y, double z, float yaw, float pitch) {
-        return String.format(
-                Locale.ROOT,
-                "tp @s %.3f %.3f %.3f %.3f %.3f",
-                x, y, z, yaw, pitch
-        );
-    }
-
-    static String buildRotateCommand(float yaw, float pitch) {
-        return String.format(
-                Locale.ROOT,
-                "tp @s ~ ~ ~ %.3f %.3f",
-                yaw, pitch
-        );
-    }
-
-    static boolean isNearPosition(MinecraftClient client, double x, double y, double z, double tolerance) {
-        if (client.player == null) {
-            return false;
-        }
-        double dx = client.player.getX() - x;
-        double dy = client.player.getY() - y;
-        double dz = client.player.getZ() - z;
-        double distanceSquared = dx * dx + dy * dy + dz * dz;
-        return distanceSquared <= (tolerance * tolerance);
-    }
-
-    static boolean isNearRotation(MinecraftClient client, float yaw, float pitch, float toleranceDegrees) {
-        if (client.player == null) {
-            return false;
-        }
-        float yawDiff = smallestAngleDifference(client.player.getYaw(), yaw);
-        float pitchDiff = Math.abs(client.player.getPitch() - pitch);
-        return yawDiff <= toleranceDegrees && pitchDiff <= toleranceDegrees;
-    }
-
-    static float smallestAngleDifference(float a, float b) {
-        float diff = Math.abs((a - b) % 360.0f);
-        return diff > 180.0f ? 360.0f - diff : diff;
     }
 
     /**

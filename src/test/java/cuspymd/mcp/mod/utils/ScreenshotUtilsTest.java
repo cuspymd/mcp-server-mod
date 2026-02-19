@@ -112,29 +112,4 @@ public class ScreenshotUtilsTest {
         String expected = "SGVsbG8sIE1DUCE=";
         assertEquals(expected, ScreenshotUtils.encodeBytesToBase64(data));
     }
-
-    @Test
-    public void testBuildTeleportCommand_FormatsExpectedCommand() {
-        String command = ScreenshotUtils.buildTeleportCommand(120.5, 70, -200.5, 180f, 0f);
-        assertEquals("tp @s 120.500 70.000 -200.500 180.000 0.000", command);
-    }
-
-    @Test
-    public void testBuildTeleportCommand_UsesRootLocaleDecimalPoint() {
-        String command = ScreenshotUtils.buildTeleportCommand(1.25, 2.5, 3.75, 90f, -30f);
-        assertTrue(command.contains("1.250 2.500 3.750 90.000 -30.000"));
-    }
-
-    @Test
-    public void testBuildRotateCommand_FormatsExpectedCommand() {
-        String command = ScreenshotUtils.buildRotateCommand(135f, -20f);
-        assertEquals("tp @s ~ ~ ~ 135.000 -20.000", command);
-    }
-
-    @Test
-    public void testSmallestAngleDifference_WrapAround() {
-        assertEquals(20f, ScreenshotUtils.smallestAngleDifference(350f, 10f), 0.0001f);
-        assertEquals(20f, ScreenshotUtils.smallestAngleDifference(10f, 350f), 0.0001f);
-        assertEquals(0f, ScreenshotUtils.smallestAngleDifference(180f, -180f), 0.0001f);
-    }
 }

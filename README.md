@@ -230,13 +230,8 @@ Capture a screenshot of the current Minecraft game screen. Optionally, you can s
 - `x` (number, optional): X coordinate to teleport the player to.
 - `y` (number, optional): Y coordinate to teleport the player to.
 - `z` (number, optional): Z coordinate to teleport the player to.
-- `yaw` (number, optional): Yaw rotation for horizontal view (accepts Minecraft yaw values, e.g. `-180..180` or `0..360`).
-- `pitch` (number, optional): Pitch rotation for vertical view (typical range `-90..90`).
-
-`take_screenshot` applies movement/rotation via server-authoritative `/tp` commands.
-If `x`, `y`, and `z` are provided, the tool sends `tp @s ...` and waits for server position sync before capture.
-If only `yaw` and/or `pitch` are provided, the tool sends `tp @s ~ ~ ~ <yaw> <pitch>` and waits for rotation sync before capture (unspecified axis keeps current value).
-If teleport permission is missing, the tool returns an error.
+- `yaw` (number, optional): Yaw rotation (0-360) for horizontal view.
+- `pitch` (number, optional): Pitch rotation (-90 to 90) for vertical view.
 
 **Response includes:**
 - Base64 encoded PNG image data.
