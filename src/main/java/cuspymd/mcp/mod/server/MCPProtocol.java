@@ -124,7 +124,8 @@ public class MCPProtocol {
         takeScreenshotTool.addProperty("description", "Capture a screenshot of the current Minecraft game screen. " +
                 "This allows you to visually inspect the world, your builds, or the player's surroundings. " +
                 "Optionally, you can specify coordinates and rotation to move the player and set their gaze before taking the screenshot. " +
-                "IMPORTANT: If x, y, and z are provided, the player WILL be teleported to that location. " +
+                "IMPORTANT: If x, y, and z are provided, the tool uses a server-authoritative /tp command to teleport the player. " +
+                "This requires sufficient command permission and will return an error if teleport does not apply. " +
                 "If yaw and pitch are provided, the player's camera direction WILL be changed. " +
                 "Use this to get the perfect angle for inspecting structures.");
 

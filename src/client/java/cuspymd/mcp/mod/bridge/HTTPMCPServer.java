@@ -278,7 +278,9 @@ public class HTTPMCPServer {
     private JsonObject handleToolsCall(JsonObject params) {
         try {
             String toolName = params.get("name").getAsString();
-            JsonObject arguments = params.getAsJsonObject("arguments");
+            JsonObject arguments = (params.has("arguments") && params.get("arguments").isJsonObject())
+                    ? params.getAsJsonObject("arguments")
+                    : new JsonObject();
 
             switch (toolName) {
                 case "execute_commands" -> {
