@@ -1,9 +1,11 @@
 package cuspymd.mcp.mod.command;
 
 import cuspymd.mcp.mod.config.MCPConfig;
+import cuspymd.mcp.mod.safety.CommandSafetyPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class SafetyValidator {
@@ -37,8 +39,13 @@ public class SafetyValidator {
         }
         
         String commandName = parts[0];
+
+        if (CommandSafetyPolicy.isHardDenied(commandName)) {
+            return ValidationResult.failure("Command '" + commandName + "' is blocked by hard safety policy");
+        }
         
-        if (!config.getServer().getAllowedCommands().contains(commandName)) {
+        List<String> allowedCommands = CommandSafetyPolicy.filterAllowedCommands(config.getServer().getAllowedCommands());
+        if (!allowedCommands.contains(commandName)) {
             return ValidationResult.failure("Command '" + commandName + "' is not allowed");
         }
         
