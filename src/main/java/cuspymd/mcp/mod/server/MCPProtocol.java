@@ -22,6 +22,10 @@ public class MCPProtocol {
         executeCommandsTool.addProperty("description",
             "Execute one or more Minecraft commands sequentially. " +
             "Allowed commands: " + allowedCommandsText + ".\n\n" +
+            "Response schema highlights:\n" +
+            "- top-level: totalCommands, acceptedCount, appliedCount, failedCount\n" +
+            "- per command: status, accepted, applied, summary, chatMessages\n" +
+            "- status values: applied, rejected_by_game, execution_error, timed_out, rejected_by_safety, unknown\n\n" +
             "BLOCK STATE SYNTAX (critical for quality builds):\n" +
             "- Doors: setblock X Y Z oak_door[facing=north,half=lower,hinge=left,open=false] then setblock X Y+1 Z oak_door[facing=north,half=upper,hinge=left,open=false]\n" +
             "- Stairs: setblock X Y Z oak_stairs[facing=east,half=bottom,shape=straight]\n" +
@@ -60,7 +64,7 @@ public class MCPProtocol {
 
         JsonObject commandsProperty = new JsonObject();
         commandsProperty.addProperty("type", "array");
-        commandsProperty.addProperty("description", "Array of Minecraft commands to execute without leading slash. Each command is executed sequentially. The response includes per-command results showing success/failure and any chat feedback from the server.");
+        commandsProperty.addProperty("description", "Array of Minecraft commands to execute without leading slash. Each command is executed sequentially. Per-command results include status, accepted/applied booleans, summary, and command-scoped chat messages.");
         commandsProperty.addProperty("minItems", 1);
         
         JsonObject commandsItems = new JsonObject();

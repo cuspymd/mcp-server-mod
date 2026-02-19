@@ -4,6 +4,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChatMessageCapture {
     private static final ChatMessageCapture INSTANCE = new ChatMessageCapture();
@@ -42,5 +44,11 @@ public class ChatMessageCapture {
             }
         }
         return null;
+    }
+
+    public List<String> drainAvailableMessages() {
+        List<String> drained = new ArrayList<>();
+        messageQueue.drainTo(drained);
+        return drained;
     }
 }

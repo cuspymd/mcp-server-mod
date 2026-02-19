@@ -30,5 +30,7 @@ public class MCPProtocolTest {
         assertTrue(allowedLine.contains("Allowed commands: tp, fill."));
         assertFalse(allowedLine.contains(" op"));
         assertFalse(allowedLine.contains("reload"));
+        assertTrue(description.contains("acceptedCount"));
+        assertTrue(description.contains("status values: applied, rejected_by_game, execution_error, timed_out, rejected_by_safety, unknown"));
     }
 }
