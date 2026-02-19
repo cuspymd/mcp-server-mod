@@ -1,48 +1,70 @@
 package cuspymd.mcp.mod.command;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CommandResult {
-    private final boolean success;
-    private final String message;
+    private final boolean accepted;
+    private final Boolean applied;
+    private final String status;
+    private final String summary;
+    private final List<String> chatMessages;
     private final String originalCommand;
     private final long executionTimeMs;
-    private final int blocksAffected;
-    private final int entitiesAffected;
     
     private CommandResult(Builder builder) {
-        this.success = builder.success;
-        this.message = builder.message;
+        this.accepted = builder.accepted;
+        this.applied = builder.applied;
+        this.status = builder.status;
+        this.summary = builder.summary;
+        this.chatMessages = List.copyOf(builder.chatMessages);
         this.originalCommand = builder.originalCommand;
         this.executionTimeMs = builder.executionTimeMs;
-        this.blocksAffected = builder.blocksAffected;
-        this.entitiesAffected = builder.entitiesAffected;
     }
     
-    public boolean isSuccess() { return success; }
-    public String getMessage() { return message; }
+    public boolean isAccepted() { return accepted; }
+    public Boolean getApplied() { return applied; }
+    public String getStatus() { return status; }
+    public String getSummary() { return summary; }
+    public List<String> getChatMessages() { return chatMessages; }
     public String getOriginalCommand() { return originalCommand; }
     public long getExecutionTimeMs() { return executionTimeMs; }
-    public int getBlocksAffected() { return blocksAffected; }
-    public int getEntitiesAffected() { return entitiesAffected; }
     
     public static Builder builder() {
         return new Builder();
     }
     
     public static class Builder {
-        private boolean success;
-        private String message;
+        private boolean accepted;
+        private Boolean applied;
+        private String status = "unknown";
+        private String summary = "";
+        private List<String> chatMessages = new ArrayList<>();
         private String originalCommand;
         private long executionTimeMs;
-        private int blocksAffected = 0;
-        private int entitiesAffected = 0;
         
-        public Builder success(boolean success) {
-            this.success = success;
+        public Builder accepted(boolean accepted) {
+            this.accepted = accepted;
             return this;
         }
         
-        public Builder message(String message) {
-            this.message = message;
+        public Builder applied(Boolean applied) {
+            this.applied = applied;
+            return this;
+        }
+
+        public Builder status(String status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder summary(String summary) {
+            this.summary = summary;
+            return this;
+        }
+
+        public Builder chatMessages(List<String> chatMessages) {
+            this.chatMessages = chatMessages == null ? new ArrayList<>() : new ArrayList<>(chatMessages);
             return this;
         }
         
@@ -53,16 +75,6 @@ public class CommandResult {
         
         public Builder executionTimeMs(long executionTimeMs) {
             this.executionTimeMs = executionTimeMs;
-            return this;
-        }
-        
-        public Builder blocksAffected(int blocksAffected) {
-            this.blocksAffected = blocksAffected;
-            return this;
-        }
-        
-        public Builder entitiesAffected(int entitiesAffected) {
-            this.entitiesAffected = entitiesAffected;
             return this;
         }
         

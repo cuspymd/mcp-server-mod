@@ -1,6 +1,7 @@
 package cuspymd.mcp.mod.command;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
@@ -12,10 +13,13 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
 public class CommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandExecutor.class);
+    private static final long COMMAND_MESSAGE_WAIT_MS = 700L;
+    private static final long COMMAND_MESSAGE_IDLE_MS = 120L;
     
     private final MCPConfig config;
     private final SafetyValidator safetyValidator;
@@ -41,16 +45,8 @@ public class CommandExecutor {
                     String command = commands.get(i);
                     SafetyValidator.ValidationResult validation = safetyValidator.validate(command);
                     if (!validation.isValid()) {
-                        JsonObject meta = new JsonObject();
-                        meta.addProperty("failed_command_index", i);
-                        meta.addProperty("failed_command", command);
-                        meta.addProperty("total_commands", commands.size());
-                        meta.addProperty("executed_commands", 0);
-                        
-                        return MCPProtocol.createErrorResponse(
-                            "Command rejected by safety validator at command " + (i + 1) + ": " + validation.getErrorMessage(),
-                            meta
-                        );
+                        JsonObject responseJson = buildSafetyRejectedResponse(commands, i, validation.getErrorMessage());
+                        return MCPProtocol.createSuccessResponse(responseJson.toString());
                     }
                 }
             }
@@ -70,80 +66,24 @@ public class CommandExecutor {
         }
         
         List<CommandResult> results = new ArrayList<>();
-        List<String> capturedMessages = new ArrayList<>();
+        List<String> allCapturedMessages = new ArrayList<>();
         
-        // Start capturing chat messages for all commands
         ChatMessageCapture capture = ChatMessageCapture.getInstance();
         capture.startCapturing();
         
         try {
-            for (int i = 0; i < commands.size(); i++) {
-                String command = commands.get(i);
-                try {
-                    CommandResult result = executeOneCommand(command).get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
-                    results.add(result);
-                    
-                    if (!result.isSuccess()) {
-                        capture.stopCapturing();
-                        JsonObject meta = new JsonObject();
-                        meta.addProperty("failed_command_index", i);
-                        meta.addProperty("failed_command", command);
-                        meta.addProperty("total_commands", commands.size());
-                        meta.addProperty("executed_commands", i);
-                        
-                        return MCPProtocol.createErrorResponse(
-                            "Command execution failed at command " + (i + 1) + ": " + result.getMessage(),
-                            meta
-                        );
-                    }
-                    
-                } catch (Exception e) {
-                    capture.stopCapturing();
-                    JsonObject meta = new JsonObject();
-                    meta.addProperty("failed_command_index", i);
-                    meta.addProperty("failed_command", command);
-                    meta.addProperty("total_commands", commands.size());
-                    meta.addProperty("executed_commands", i);
-                    
-                    return MCPProtocol.createErrorResponse(
-                        "Command execution failed at command " + (i + 1) + ": " + e.getMessage(),
-                        meta
-                    );
-                }
-            }
-            
-            // Wait for chat messages after all commands are executed
-            long totalWaitTime = Math.min(commands.size() * 200, 2000); // Max 2 seconds
-            long startTime = System.currentTimeMillis();
+            capture.drainAvailableMessages();
+            for (String command : commands) {
+                CommandResult executionResult = executeCommandWithTimeout(command);
+                List<String> commandMessages = collectMessagesForCommand(capture);
+                allCapturedMessages.addAll(commandMessages);
 
-            while (System.currentTimeMillis() - startTime < totalWaitTime) {
-                try {
-                    String message = capture.waitForMessage(100);
-                    if (message != null) {
-                        capturedMessages.add(message);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                CommandResult analyzedResult = applyOutcomeAnalysis(executionResult, commandMessages);
+                results.add(analyzedResult);
             }
 
-            capture.stopCapturing();
-
-            // Build response with captured messages
-            StringBuilder responseMessage = new StringBuilder();
-            responseMessage.append("Executed ").append(commands.size()).append(" commands.");
-
-            if (!capturedMessages.isEmpty()) {
-                responseMessage.append(":\n\n");
-                for (String message : capturedMessages) {
-                    responseMessage.append(message).append("\n");
-                }
-            } else {
-                responseMessage.append(". No chat responses captured.");
-            }
-
-            return MCPProtocol.createSuccessResponse(responseMessage.toString().trim());
+            JsonObject responseJson = buildExecuteCommandsResponse(commands.size(), results, allCapturedMessages);
+            return MCPProtocol.createSuccessResponse(responseJson.toString());
             
         } finally {
             capture.stopCapturing();
@@ -159,8 +99,10 @@ public class CommandExecutor {
             
             if (player == null) {
                 return CommandResult.builder()
-                    .success(false)
-                    .message("Player is not available")
+                    .accepted(false)
+                    .applied(false)
+                    .status("execution_error")
+                    .summary("Player is not available")
                     .originalCommand(command)
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .build();
@@ -172,34 +114,214 @@ public class CommandExecutor {
                 if (config.getClient().isLogCommands()) {
                     LOGGER.info("Executing command: {}", fullCommand);
                 }
-                
+
+                boolean hasNetworkHandler = client.getNetworkHandler() != null;
                 client.execute(() -> {
                     if (client.getNetworkHandler() != null) {
                         client.getNetworkHandler().sendChatCommand(command);
                     }
                 });
+
+                if (!hasNetworkHandler) {
+                    return CommandResult.builder()
+                        .accepted(false)
+                        .applied(false)
+                        .status("execution_error")
+                        .summary("Network handler is not available")
+                        .originalCommand(command)
+                        .executionTimeMs(System.currentTimeMillis() - startTime)
+                        .build();
+                }
                 
                 // Small delay to allow command to execute
                 Thread.sleep(50);
-                
-                String resultMessage = "Command executed";
-                boolean success = true;
-                
+
                 return CommandResult.builder()
-                    .success(success)
-                    .message(resultMessage)
+                    .accepted(true)
+                    .applied(null)
+                    .status("unknown")
+                    .summary("Command sent")
+                    .originalCommand(command)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .build();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return CommandResult.builder()
+                    .accepted(false)
+                    .applied(false)
+                    .status("execution_error")
+                    .summary("Command execution interrupted")
                     .originalCommand(command)
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .build();
                 
             } catch (Exception e) {
                 return CommandResult.builder()
-                    .success(false)
-                    .message("Failed to execute command: " + e.getMessage())
+                    .accepted(false)
+                    .applied(false)
+                    .status("execution_error")
+                    .summary("Failed to execute command: " + e.getMessage())
                     .originalCommand(command)
                     .executionTimeMs(System.currentTimeMillis() - startTime)
                     .build();
             }
         });
+    }
+
+    private CommandResult executeCommandWithTimeout(String command) {
+        try {
+            return executeOneCommand(command).get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            return CommandResult.builder()
+                .accepted(false)
+                .applied(false)
+                .status("timed_out")
+                .summary("Command timed out")
+                .originalCommand(command)
+                .executionTimeMs(config.getServer().getRequestTimeoutMs())
+                .build();
+        } catch (Exception e) {
+            return CommandResult.builder()
+                .accepted(false)
+                .applied(false)
+                .status("execution_error")
+                .summary("Command failed before completion: " + e.getMessage())
+                .originalCommand(command)
+                .executionTimeMs(0L)
+                .build();
+        }
+    }
+
+    private List<String> collectMessagesForCommand(ChatMessageCapture capture) {
+        List<String> messages = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        long lastMessageAt = start;
+
+        while (System.currentTimeMillis() - start < COMMAND_MESSAGE_WAIT_MS) {
+            try {
+                String message = capture.waitForMessage(75);
+                if (message != null) {
+                    messages.add(message);
+                    lastMessageAt = System.currentTimeMillis();
+                    continue;
+                }
+
+                if (!messages.isEmpty() && System.currentTimeMillis() - lastMessageAt >= COMMAND_MESSAGE_IDLE_MS) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        messages.addAll(capture.drainAvailableMessages());
+        return messages;
+    }
+
+    private CommandResult applyOutcomeAnalysis(CommandResult result, List<String> chatMessages) {
+        if (!result.isAccepted()) {
+            return CommandResult.builder()
+                .accepted(false)
+                .applied(result.getApplied())
+                .status(result.getStatus())
+                .summary(result.getSummary())
+                .chatMessages(chatMessages)
+                .originalCommand(result.getOriginalCommand())
+                .executionTimeMs(result.getExecutionTimeMs())
+                .build();
+        }
+
+        CommandOutcomeAnalyzer.Outcome outcome =
+            CommandOutcomeAnalyzer.analyze(true, chatMessages, result.getSummary());
+
+        return CommandResult.builder()
+            .accepted(outcome.accepted())
+            .applied(outcome.applied())
+            .status(outcome.status())
+            .summary(outcome.summary())
+            .chatMessages(chatMessages)
+            .originalCommand(result.getOriginalCommand())
+            .executionTimeMs(result.getExecutionTimeMs())
+            .build();
+    }
+
+    static JsonObject buildExecuteCommandsResponse(int totalCommands, List<CommandResult> results, List<String> capturedMessages) {
+        JsonObject responseJson = new JsonObject();
+        int acceptedCount = 0;
+        int appliedCount = 0;
+        int failedCount = 0;
+
+        JsonArray commandResults = new JsonArray();
+        for (int i = 0; i < results.size(); i++) {
+            CommandResult result = results.get(i);
+            if (result.isAccepted()) {
+                acceptedCount++;
+            }
+            if (Boolean.TRUE.equals(result.getApplied())) {
+                appliedCount++;
+            }
+            if (Boolean.FALSE.equals(result.getApplied())) {
+                failedCount++;
+            }
+
+            JsonObject cmdResult = new JsonObject();
+            cmdResult.addProperty("index", i);
+            cmdResult.addProperty("command", result.getOriginalCommand());
+            cmdResult.addProperty("status", result.getStatus());
+            cmdResult.addProperty("accepted", result.isAccepted());
+            if (result.getApplied() == null) {
+                cmdResult.add("applied", JsonNull.INSTANCE);
+            } else {
+                cmdResult.addProperty("applied", result.getApplied());
+            }
+            cmdResult.addProperty("executionTimeMs", result.getExecutionTimeMs());
+            cmdResult.addProperty("summary", result.getSummary());
+
+            JsonArray perCommandMessages = new JsonArray();
+            for (String chatMessage : result.getChatMessages()) {
+                perCommandMessages.add(chatMessage);
+            }
+            cmdResult.add("chatMessages", perCommandMessages);
+            commandResults.add(cmdResult);
+        }
+
+        responseJson.addProperty("totalCommands", totalCommands);
+        responseJson.addProperty("acceptedCount", acceptedCount);
+        responseJson.addProperty("appliedCount", appliedCount);
+        responseJson.addProperty("failedCount", failedCount);
+        responseJson.add("results", commandResults);
+
+        JsonArray messages = new JsonArray();
+        for (String message : capturedMessages) {
+            messages.add(message);
+        }
+        responseJson.add("chatMessages", messages);
+
+        responseJson.addProperty("hint", "Use get_blocks_in_area to verify the built structure and fix any issues.");
+        return responseJson;
+    }
+
+    static JsonObject buildSafetyRejectedResponse(List<String> commands, int failedCommandIndex, String reason) {
+        List<CommandResult> results = new ArrayList<>();
+        String failedSummary = "Command rejected by safety validator: " + reason;
+        String skippedSummary = "Skipped because safety validation failed at command " + (failedCommandIndex + 1);
+
+        for (int i = 0; i < commands.size(); i++) {
+            String summary = i == failedCommandIndex ? failedSummary : skippedSummary;
+            results.add(CommandResult.builder()
+                .accepted(false)
+                .applied(false)
+                .status("rejected_by_safety")
+                .summary(summary)
+                .chatMessages(List.of())
+                .originalCommand(commands.get(i))
+                .executionTimeMs(0L)
+                .build());
+        }
+
+        JsonObject responseJson = buildExecuteCommandsResponse(commands.size(), results, List.of());
+        responseJson.addProperty("hint", "Adjust commands to satisfy safety validation, then retry.");
+        return responseJson;
     }
 }
