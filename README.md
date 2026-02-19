@@ -64,6 +64,8 @@ The mod creates a configuration file at `config/mcp-client.json`:
 }
 ```
 
+`server.request_timeout_ms` limits how long the server waits for tool execution (including `execute_commands` and `take_screenshot`) before returning a timeout error.
+
 ### Connecting with AI Assistants
 
 Connect your AI assistant (like Claude) to the MCP server using the endpoint:
