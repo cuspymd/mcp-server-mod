@@ -130,34 +130,20 @@ public class CommandExecutor {
 
             capture.stopCapturing();
 
-            // Build structured response with per-command results
-            JsonObject responseJson = new JsonObject();
-            responseJson.addProperty("totalCommands", commands.size());
-            responseJson.addProperty("successCount", results.size());
-
-            JsonArray commandResults = new JsonArray();
-            for (int i = 0; i < results.size(); i++) {
-                JsonObject cmdResult = new JsonObject();
-                cmdResult.addProperty("index", i);
-                cmdResult.addProperty("command", commands.get(i));
-                cmdResult.addProperty("success", results.get(i).isSuccess());
-                cmdResult.addProperty("message", results.get(i).getMessage());
-                cmdResult.addProperty("executionTimeMs", results.get(i).getExecutionTimeMs());
-                commandResults.add(cmdResult);
-            }
-            responseJson.add("results", commandResults);
+            // Build response with captured messages
+            StringBuilder responseMessage = new StringBuilder();
+            responseMessage.append("Executed ").append(commands.size()).append(" commands.");
 
             if (!capturedMessages.isEmpty()) {
-                JsonArray messages = new JsonArray();
+                responseMessage.append(":\n\n");
                 for (String message : capturedMessages) {
-                    messages.add(message);
+                    responseMessage.append(message).append("\n");
                 }
-                responseJson.add("chatMessages", messages);
+            } else {
+                responseMessage.append(". No chat responses captured.");
             }
 
-            responseJson.addProperty("hint", "Use get_blocks_in_area to verify the built structure and fix any issues.");
-
-            return MCPProtocol.createSuccessResponse(responseJson.toString());
+            return MCPProtocol.createSuccessResponse(responseMessage.toString().trim());
             
         } finally {
             capture.stopCapturing();

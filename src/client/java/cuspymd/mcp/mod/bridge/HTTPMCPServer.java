@@ -11,14 +11,19 @@ import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
 import cuspymd.mcp.mod.utils.PlayerInfoProvider;
 import cuspymd.mcp.mod.utils.BlockScanner;
+import cuspymd.mcp.mod.utils.ScreenshotUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HTTPMCPServer {
@@ -289,6 +294,9 @@ public class HTTPMCPServer {
                 case "get_blocks_in_area" -> {
                     return handleGetBlocksInArea(arguments);
                 }
+                case "take_screenshot" -> {
+                    return handleTakeScreenshot(arguments);
+                }
                 case null, default -> {
                     JsonObject error = new JsonObject();
                     error.addProperty("isError", true);
@@ -353,6 +361,51 @@ public class HTTPMCPServer {
             LOGGER.error("Error getting blocks in area: {}", e.getMessage());
             return MCPProtocol.createErrorResponse("Failed to get blocks in area: " + e.getMessage(), null);
         }
+    }
+
+    private JsonObject handleTakeScreenshot(JsonObject arguments) {
+        CompletableFuture<String> future;
+        try {
+            // Treat null arguments as an empty object
+            JsonObject params = arguments != null ? arguments : new JsonObject();
+            future = takeScreenshotAsync(params);
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error taking screenshot", e);
+            return MCPProtocol.createErrorResponse("Failed to take screenshot: " + e.getMessage(), null);
+        }
+
+        return awaitScreenshotResult(future);
+    }
+
+    JsonObject awaitScreenshotResult(CompletableFuture<String> future) {
+        try {
+            // Wait for screenshot completion (this runs on an executor thread, not the render thread)
+            String base64Data = future.get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
+            return MCPProtocol.createImageResponse(base64Data, "image/png");
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            LOGGER.warn("Screenshot capture timed out after {} ms", config.getServer().getRequestTimeoutMs());
+            return MCPProtocol.createErrorResponse(
+                "Screenshot capture timed out after " + config.getServer().getRequestTimeoutMs() + " ms",
+                null
+            );
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Screenshot capture interrupted");
+            return MCPProtocol.createErrorResponse("Screenshot capture was interrupted", null);
+        } catch (ExecutionException e) {
+            LOGGER.error("Error taking screenshot", e.getCause() != null ? e.getCause() : e);
+            String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            return MCPProtocol.createErrorResponse("Failed to take screenshot: " + errorMessage, null);
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error taking screenshot", e);
+            return MCPProtocol.createErrorResponse("Failed to take screenshot: " + e.getMessage(), null);
+        }
+    }
+
+    CompletableFuture<String> takeScreenshotAsync(JsonObject params) {
+        return ScreenshotUtils.takeScreenshot(params);
     }
     
     private JsonObject createSuccessResponse(JsonObject result, Integer requestId) {
