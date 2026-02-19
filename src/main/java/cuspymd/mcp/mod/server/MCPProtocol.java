@@ -3,17 +3,22 @@ package cuspymd.mcp.mod.server;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.config.MCPConfig;
-import cuspymd.mcp.mod.safety.CommandSafetyPolicy;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MCPProtocol {
+    private static final Set<String> DESCRIBABLE_COMMANDS = Set.of(
+        "fill", "clone", "setblock", "summon", "tp", "give", "gamemode",
+        "effect", "enchant", "weather", "time", "say", "tell", "title"
+    );
     
     public static JsonArray getToolsListResponse(MCPConfig config) {
         JsonArray tools = new JsonArray();
         List<String> configuredAllowedCommands = (config != null && config.getServer() != null && config.getServer().getAllowedCommands() != null)
             ? config.getServer().getAllowedCommands()
             : List.of("fill", "clone", "setblock", "summon", "tp", "give", "gamemode", "effect", "enchant", "weather", "time", "say", "tell", "title");
-        List<String> allowedCommands = CommandSafetyPolicy.filterAllowedCommands(configuredAllowedCommands);
+        List<String> allowedCommands = filterAllowedCommandsForDescription(configuredAllowedCommands);
         String allowedCommandsText = allowedCommands.isEmpty() ? "(none configured)" : String.join(", ", allowedCommands);
         
         // Execute commands tool
@@ -215,5 +220,37 @@ public class MCPProtocol {
         }
         
         return response;
+    }
+
+    public static JsonObject createImageResponse(String base64Data, String mimeType) {
+        JsonObject response = new JsonObject();
+        response.addProperty("isError", false);
+
+        JsonArray content = new JsonArray();
+        JsonObject imageContent = new JsonObject();
+        imageContent.addProperty("type", "image");
+        imageContent.addProperty("data", base64Data);
+        imageContent.addProperty("mimeType", mimeType);
+        content.add(imageContent);
+
+        response.add("content", content);
+        return response;
+    }
+
+    private static List<String> filterAllowedCommandsForDescription(List<String> configuredAllowedCommands) {
+        LinkedHashSet<String> filtered = new LinkedHashSet<>();
+        for (String command : configuredAllowedCommands) {
+            if (command == null) {
+                continue;
+            }
+            String normalized = command.trim().toLowerCase();
+            if (normalized.startsWith("/")) {
+                normalized = normalized.substring(1);
+            }
+            if (!normalized.isEmpty() && DESCRIBABLE_COMMANDS.contains(normalized)) {
+                filtered.add(normalized);
+            }
+        }
+        return List.copyOf(filtered);
     }
 }
