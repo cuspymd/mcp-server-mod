@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
@@ -107,88 +108,71 @@ public class CommandExecutor {
         }
     }
     
-    private CompletableFuture<CommandResult> executeOneCommand(String command) {
-        return CompletableFuture.supplyAsync(() -> {
-            long startTime = System.currentTimeMillis();
-            
-            MinecraftClient client = MinecraftClient.getInstance();
-            ClientPlayerEntity player = client.player;
-            
-            if (player == null) {
-                return CommandResult.builder()
-                    .accepted(false)
-                    .applied(false)
-                    .status("execution_error")
-                    .summary("Player is not available")
-                    .originalCommand(command)
-                    .executionTimeMs(System.currentTimeMillis() - startTime)
-                    .build();
+    CompletableFuture<CommandResult> executeOneCommand(String command) {
+        long startTime = System.currentTimeMillis();
+        CompletableFuture<CommandResult> resultFuture = new CompletableFuture<>();
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        ClientPlayerEntity player = client.player;
+
+        if (player == null) {
+            resultFuture.complete(buildExecutionError(command, "Player is not available", startTime));
+            return resultFuture;
+        }
+
+        try {
+            String fullCommand = command.startsWith("/") ? command : "/" + command;
+            if (config.getClient().isLogCommands()) {
+                LOGGER.info("Executing command: {}", fullCommand);
             }
-            
-            try {
-                String fullCommand = command.startsWith("/") ? command : "/" + command;
-                
-                if (config.getClient().isLogCommands()) {
-                    LOGGER.info("Executing command: {}", fullCommand);
+
+            client.execute(() -> {
+                if (resultFuture.isDone()) {
+                    return;
                 }
 
-                boolean hasNetworkHandler = client.getNetworkHandler() != null;
-                client.execute(() -> {
-                    if (client.getNetworkHandler() != null) {
-                        client.getNetworkHandler().sendChatCommand(command);
+                try {
+                    if (client.getNetworkHandler() == null) {
+                        resultFuture.complete(buildExecutionError(command, "Network handler is not available", startTime));
+                        return;
                     }
-                });
 
-                if (!hasNetworkHandler) {
-                    return CommandResult.builder()
-                        .accepted(false)
-                        .applied(false)
-                        .status("execution_error")
-                        .summary("Network handler is not available")
+                    boolean sent = sendCommandIfPending(
+                        resultFuture,
+                        command,
+                        cmd -> client.getNetworkHandler().sendChatCommand(cmd)
+                    );
+                    if (!sent) {
+                        return;
+                    }
+
+                    resultFuture.complete(CommandResult.builder()
+                        .accepted(true)
+                        .applied(null)
+                        .status("unknown")
+                        .summary("Command sent")
                         .originalCommand(command)
                         .executionTimeMs(System.currentTimeMillis() - startTime)
-                        .build();
+                        .build());
+                } catch (Exception e) {
+                    if (!resultFuture.isDone()) {
+                        resultFuture.complete(buildExecutionError(command, "Failed to execute command: " + e.getMessage(), startTime));
+                    }
                 }
-                
-                // Small delay to allow command to execute
-                Thread.sleep(50);
+            });
+        } catch (Exception e) {
+            resultFuture.complete(buildExecutionError(command, "Failed to execute command: " + e.getMessage(), startTime));
+        }
 
-                return CommandResult.builder()
-                    .accepted(true)
-                    .applied(null)
-                    .status("unknown")
-                    .summary("Command sent")
-                    .originalCommand(command)
-                    .executionTimeMs(System.currentTimeMillis() - startTime)
-                    .build();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return CommandResult.builder()
-                    .accepted(false)
-                    .applied(false)
-                    .status("execution_error")
-                    .summary("Command execution interrupted")
-                    .originalCommand(command)
-                    .executionTimeMs(System.currentTimeMillis() - startTime)
-                    .build();
-                
-            } catch (Exception e) {
-                return CommandResult.builder()
-                    .accepted(false)
-                    .applied(false)
-                    .status("execution_error")
-                    .summary("Failed to execute command: " + e.getMessage())
-                    .originalCommand(command)
-                    .executionTimeMs(System.currentTimeMillis() - startTime)
-                    .build();
-            }
-        });
+        return resultFuture;
     }
 
-    private CommandResult executeCommandWithTimeout(String command) {
+    CommandResult executeCommandWithTimeout(String command) {
+        CompletableFuture<CommandResult> future = executeOneCommand(command);
         try {
-            return executeOneCommand(command).get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
+            return future.get(config.getServer().getRequestTimeoutMs(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            future.cancel(true);
             return CommandResult.builder()
                 .accepted(false)
                 .applied(false)
@@ -196,6 +180,27 @@ public class CommandExecutor {
                 .summary("Command timed out")
                 .originalCommand(command)
                 .executionTimeMs(config.getServer().getRequestTimeoutMs())
+                .build();
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            Thread.currentThread().interrupt();
+            return CommandResult.builder()
+                .accepted(false)
+                .applied(false)
+                .status("execution_error")
+                .summary("Command execution interrupted")
+                .originalCommand(command)
+                .executionTimeMs(0L)
+                .build();
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            return CommandResult.builder()
+                .accepted(false)
+                .applied(false)
+                .status("execution_error")
+                .summary("Command failed before completion: " + cause.getMessage())
+                .originalCommand(command)
+                .executionTimeMs(0L)
                 .build();
         } catch (Exception e) {
             return CommandResult.builder()
@@ -207,6 +212,34 @@ public class CommandExecutor {
                 .executionTimeMs(0L)
                 .build();
         }
+    }
+
+    @FunctionalInterface
+    interface CommandSender {
+        void send(String command);
+    }
+
+    static boolean sendCommandIfPending(
+        CompletableFuture<CommandResult> resultFuture,
+        String command,
+        CommandSender sender
+    ) {
+        if (resultFuture.isDone()) {
+            return false;
+        }
+        sender.send(command);
+        return true;
+    }
+
+    private static CommandResult buildExecutionError(String command, String summary, long startTime) {
+        return CommandResult.builder()
+            .accepted(false)
+            .applied(false)
+            .status("execution_error")
+            .summary(summary)
+            .originalCommand(command)
+            .executionTimeMs(System.currentTimeMillis() - startTime)
+            .build();
     }
 
     private List<ChatMessageCapture.CapturedMessage> collectMessagesForCommand(ChatMessageCapture capture) {
