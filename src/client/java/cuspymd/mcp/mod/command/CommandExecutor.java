@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +22,14 @@ public class CommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandExecutor.class);
     private static final long COMMAND_MESSAGE_WAIT_MS = 700L;
     private static final long COMMAND_MESSAGE_IDLE_MS = 120L;
+    private static final Set<String> TP_VERBS = Set.of("tp", "teleport");
+    private static final Set<String> GIVE_VERBS = Set.of("give");
+    private static final Set<String> FILL_VERBS = Set.of("fill");
+    private static final Set<String> SET_BLOCK_VERBS = Set.of("setblock");
+    private static final Set<String> SUMMON_VERBS = Set.of("summon");
+    private static final Set<String> WEATHER_VERBS = Set.of("weather");
+    private static final Set<String> TIME_VERBS = Set.of("time");
+    private static final Set<String> CHAT_OUTPUT_VERBS = Set.of("say", "tell", "title");
     
     private final MCPConfig config;
     private final SafetyValidator safetyValidator;
@@ -72,13 +82,20 @@ public class CommandExecutor {
         capture.startCapturing();
         
         try {
-            capture.drainAvailableMessages();
+            capture.drainAvailableCapturedMessages();
             for (String command : commands) {
+                capture.drainAvailableCapturedMessages();
+                long commandStartedAt = System.currentTimeMillis();
                 CommandResult executionResult = executeCommandWithTimeout(command);
-                List<String> commandMessages = collectMessagesForCommand(capture);
+                List<ChatMessageCapture.CapturedMessage> capturedForCommand = collectMessagesForCommand(capture);
+                List<ChatMessageCapture.CapturedMessage> commandWindowMessages =
+                    keepMessagesAfter(commandStartedAt, capturedForCommand);
+                List<String> commandMessages = toTextList(commandWindowMessages);
+                List<String> analysisMessages = selectMessagesForOutcome(command, commandWindowMessages);
                 allCapturedMessages.addAll(commandMessages);
 
-                CommandResult analyzedResult = applyOutcomeAnalysis(executionResult, commandMessages);
+                CommandResult analyzedResult =
+                    applyOutcomeAnalysis(executionResult, analysisMessages, commandMessages);
                 results.add(analyzedResult);
             }
 
@@ -192,14 +209,14 @@ public class CommandExecutor {
         }
     }
 
-    private List<String> collectMessagesForCommand(ChatMessageCapture capture) {
-        List<String> messages = new ArrayList<>();
+    private List<ChatMessageCapture.CapturedMessage> collectMessagesForCommand(ChatMessageCapture capture) {
+        List<ChatMessageCapture.CapturedMessage> messages = new ArrayList<>();
         long start = System.currentTimeMillis();
         long lastMessageAt = start;
 
         while (System.currentTimeMillis() - start < COMMAND_MESSAGE_WAIT_MS) {
             try {
-                String message = capture.waitForMessage(75);
+                ChatMessageCapture.CapturedMessage message = capture.waitForCapturedMessage(75);
                 if (message != null) {
                     messages.add(message);
                     lastMessageAt = System.currentTimeMillis();
@@ -215,11 +232,15 @@ public class CommandExecutor {
             }
         }
 
-        messages.addAll(capture.drainAvailableMessages());
+        messages.addAll(capture.drainAvailableCapturedMessages());
         return messages;
     }
 
-    private CommandResult applyOutcomeAnalysis(CommandResult result, List<String> chatMessages) {
+    private CommandResult applyOutcomeAnalysis(
+        CommandResult result,
+        List<String> analysisMessages,
+        List<String> chatMessages
+    ) {
         if (!result.isAccepted()) {
             return CommandResult.builder()
                 .accepted(false)
@@ -233,7 +254,7 @@ public class CommandExecutor {
         }
 
         CommandOutcomeAnalyzer.Outcome outcome =
-            CommandOutcomeAnalyzer.analyze(true, chatMessages, result.getSummary());
+            CommandOutcomeAnalyzer.analyze(true, analysisMessages, result.getSummary());
 
         return CommandResult.builder()
             .accepted(outcome.accepted())
@@ -244,6 +265,160 @@ public class CommandExecutor {
             .originalCommand(result.getOriginalCommand())
             .executionTimeMs(result.getExecutionTimeMs())
             .build();
+    }
+
+    static List<String> selectMessagesForOutcome(
+        String command,
+        List<ChatMessageCapture.CapturedMessage> capturedMessages
+    ) {
+        if (capturedMessages == null || capturedMessages.isEmpty()) {
+            return List.of();
+        }
+
+        String verb = extractCommandVerb(command);
+        List<String> candidates = new ArrayList<>();
+
+        for (ChatMessageCapture.CapturedMessage captured : capturedMessages) {
+            if (captured == null || captured.text() == null || captured.text().isBlank()) {
+                continue;
+            }
+
+            if (captured.source() == ChatMessageCapture.MessageSource.PLAYER_CHAT) {
+                continue;
+            }
+
+            if (isLikelyCommandFeedback(verb, captured.text())) {
+                candidates.add(captured.text());
+            }
+        }
+
+        if (!candidates.isEmpty()) {
+            return candidates;
+        }
+
+        List<String> fallback = new ArrayList<>();
+        for (ChatMessageCapture.CapturedMessage captured : capturedMessages) {
+            if (captured == null || captured.text() == null || captured.text().isBlank()) {
+                continue;
+            }
+
+            if (captured.source() != ChatMessageCapture.MessageSource.PLAYER_CHAT
+                && !CommandOutcomeAnalyzer.hasKnownOutcomeMarker(captured.text())) {
+                fallback.add(captured.text());
+            }
+        }
+        return fallback;
+    }
+
+    private static List<ChatMessageCapture.CapturedMessage> keepMessagesAfter(
+        long timestampMs,
+        List<ChatMessageCapture.CapturedMessage> messages
+    ) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+
+        List<ChatMessageCapture.CapturedMessage> filtered = new ArrayList<>();
+        for (ChatMessageCapture.CapturedMessage message : messages) {
+            if (message != null && message.timestampMs() >= timestampMs) {
+                filtered.add(message);
+            }
+        }
+        return filtered;
+    }
+
+    private static List<String> toTextList(List<ChatMessageCapture.CapturedMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> texts = new ArrayList<>();
+        for (ChatMessageCapture.CapturedMessage message : messages) {
+            if (message != null && message.text() != null) {
+                texts.add(message.text());
+            }
+        }
+        return texts;
+    }
+
+    private static boolean isLikelyCommandFeedback(String commandVerb, String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+
+        if (CHAT_OUTPUT_VERBS.contains(commandVerb)) {
+            return isExplicitCommandError(message);
+        }
+
+        if (CommandOutcomeAnalyzer.hasKnownOutcomeMarker(message)) {
+            if (CommandOutcomeAnalyzer.hasFailureMarker(message)) {
+                return true;
+            }
+
+            return successMarkerMatchesVerb(commandVerb, message);
+        }
+
+        return false;
+    }
+
+    private static boolean isExplicitCommandError(String message) {
+        String normalized = message.toLowerCase(Locale.ROOT);
+        return normalized.contains("<--[here]")
+            || normalized.contains("unknown or incomplete command")
+            || normalized.contains("unknown command")
+            || normalized.contains("incorrect argument")
+            || normalized.contains("expected");
+    }
+
+    private static boolean successMarkerMatchesVerb(String commandVerb, String message) {
+        String normalizedMessage = message.toLowerCase(Locale.ROOT);
+        if (commandVerb == null || commandVerb.isBlank()) {
+            return CommandOutcomeAnalyzer.hasSuccessMarker(normalizedMessage);
+        }
+
+        if (TP_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("teleported");
+        }
+        if (GIVE_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("gave") || normalizedMessage.contains("given");
+        }
+        if (FILL_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("filled");
+        }
+        if (SET_BLOCK_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("set block")
+                || normalizedMessage.contains("changed the block");
+        }
+        if (SUMMON_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("summoned");
+        }
+        if (WEATHER_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("set the weather");
+        }
+        if (TIME_VERBS.contains(commandVerb)) {
+            return normalizedMessage.contains("set the time");
+        }
+
+        return CommandOutcomeAnalyzer.hasSuccessMarker(normalizedMessage);
+    }
+
+    private static String extractCommandVerb(String command) {
+        if (command == null) {
+            return "";
+        }
+
+        String trimmed = command.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+
+        if (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1);
+        }
+
+        int spaceIndex = trimmed.indexOf(' ');
+        String verb = spaceIndex >= 0 ? trimmed.substring(0, spaceIndex) : trimmed;
+        return verb.toLowerCase(Locale.ROOT);
     }
 
     static JsonObject buildExecuteCommandsResponse(int totalCommands, List<CommandResult> results, List<String> capturedMessages) {

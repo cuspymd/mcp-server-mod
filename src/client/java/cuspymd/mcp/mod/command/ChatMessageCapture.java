@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ChatMessageCapture {
     private static final ChatMessageCapture INSTANCE = new ChatMessageCapture();
-    private final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<CapturedMessage> messageQueue = new LinkedBlockingQueue<>();
     private volatile boolean capturing = false;
     
     public static ChatMessageCapture getInstance() {
@@ -17,8 +17,12 @@ public class ChatMessageCapture {
     }
     
     public void captureMessage(String message) {
+        captureMessage(message, MessageSource.UNKNOWN);
+    }
+
+    public void captureMessage(String message, MessageSource source) {
         if (capturing && message != null) {
-            messageQueue.offer(message);
+            messageQueue.offer(new CapturedMessage(message, System.currentTimeMillis(), source));
         }
     }
     
@@ -32,23 +36,45 @@ public class ChatMessageCapture {
     }
     
     public String waitForMessage(long timeoutMs) throws InterruptedException {
-        return messageQueue.poll(timeoutMs, TimeUnit.MILLISECONDS);
+        CapturedMessage message = waitForCapturedMessage(timeoutMs);
+        return message == null ? null : message.text();
     }
     
     public String waitForMessage(long timeoutMs, Predicate<String> filter) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < timeoutMs) {
-            String message = messageQueue.poll(100, TimeUnit.MILLISECONDS);
-            if (message != null && filter.test(message)) {
-                return message;
+            CapturedMessage message = messageQueue.poll(100, TimeUnit.MILLISECONDS);
+            if (message != null && filter.test(message.text())) {
+                return message.text();
             }
         }
         return null;
     }
 
+    public CapturedMessage waitForCapturedMessage(long timeoutMs) throws InterruptedException {
+        return messageQueue.poll(timeoutMs, TimeUnit.MILLISECONDS);
+    }
+
     public List<String> drainAvailableMessages() {
-        List<String> drained = new ArrayList<>();
+        List<String> messages = new ArrayList<>();
+        for (CapturedMessage captured : drainAvailableCapturedMessages()) {
+            messages.add(captured.text());
+        }
+        return messages;
+    }
+
+    public List<CapturedMessage> drainAvailableCapturedMessages() {
+        List<CapturedMessage> drained = new ArrayList<>();
         messageQueue.drainTo(drained);
         return drained;
+    }
+
+    public enum MessageSource {
+        SYSTEM,
+        PLAYER_CHAT,
+        UNKNOWN
+    }
+
+    public record CapturedMessage(String text, long timestampMs, MessageSource source) {
     }
 }

@@ -31,6 +31,18 @@ public final class CommandOutcomeAnalyzer {
     private CommandOutcomeAnalyzer() {
     }
 
+    static boolean hasFailureMarker(String message) {
+        return containsAnyMarker(message, FAILURE_MARKERS);
+    }
+
+    static boolean hasSuccessMarker(String message) {
+        return containsAnyMarker(message, SUCCESS_MARKERS);
+    }
+
+    static boolean hasKnownOutcomeMarker(String message) {
+        return hasFailureMarker(message) || hasSuccessMarker(message);
+    }
+
     public static Outcome analyze(boolean accepted, List<String> chatMessages, String fallbackSummary) {
         if (!accepted) {
             String summary = fallbackSummary != null && !fallbackSummary.isBlank()
@@ -62,17 +74,25 @@ public final class CommandOutcomeAnalyzer {
         }
 
         for (String message : messages) {
-            if (message == null) {
-                continue;
-            }
-            String normalized = message.toLowerCase(Locale.ROOT);
-            for (String marker : markers) {
-                if (normalized.contains(marker)) {
-                    return Optional.of(message);
-                }
+            if (containsAnyMarker(message, markers)) {
+                return Optional.of(message);
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean containsAnyMarker(String message, List<String> markers) {
+        if (message == null || markers == null || markers.isEmpty()) {
+            return false;
+        }
+
+        String normalized = message.toLowerCase(Locale.ROOT);
+        for (String marker : markers) {
+            if (normalized.contains(marker)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public record Outcome(boolean accepted, Boolean applied, String status, String summary) {
