@@ -150,6 +150,11 @@ Execute one or more Minecraft commands sequentially with safety validation.
 - `commands` (array): List of Minecraft commands (without leading slash)
 - `validate_safety` (boolean): Enable safety validation (default: true)
 
+**Response schema (text payload JSON):**
+- Top-level: `totalCommands`, `acceptedCount`, `appliedCount`, `failedCount`, `results`, `chatMessages`
+- Per command: `index`, `command`, `status`, `accepted`, `applied`, `summary`, `chatMessages`
+- `status` values: `applied`, `rejected_by_game`, `execution_error`, `timed_out`, `rejected_by_safety`, `unknown`
+
 **Example Request:**
 ```json
 {

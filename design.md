@@ -141,7 +141,7 @@ minecraft-mcp-client/
   "content": [
     {
       "type": "text",
-      "text": "Executed 3 commands successfully:\n1. fill ~ ~ ~ ~10 ~5 ~8 oak_planks (360 blocks affected)\n2. setblock ~5 ~6 ~4 oak_door (1 block affected)\n3. summon villager ~5 ~1 ~4 (1 entity spawned)"
+      "text": "{\"totalCommands\":2,\"acceptedCount\":2,\"appliedCount\":1,\"failedCount\":1,\"results\":[{\"index\":0,\"command\":\"fill 0 64 0 1 64 1 stone\",\"status\":\"applied\",\"accepted\":true,\"applied\":true,\"summary\":\"Successfully filled 4 block(s)\",\"chatMessages\":[\"Successfully filled 4 block(s)\"]},{\"index\":1,\"command\":\"enchant @s minecraft:unbreaking 1\",\"status\":\"rejected_by_game\",\"accepted\":true,\"applied\":false,\"summary\":\"Carrot cannot support that enchantment\",\"chatMessages\":[\"Carrot cannot support that enchantment\"]}],\"chatMessages\":[\"Successfully filled 4 block(s)\",\"Carrot cannot support that enchantment\"]}"
     }
   ]
 }
