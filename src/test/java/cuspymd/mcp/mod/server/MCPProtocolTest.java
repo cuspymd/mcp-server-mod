@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.config.MCPConfig;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,5 +33,17 @@ public class MCPProtocolTest {
         assertFalse(allowedLine.contains("reload"));
         assertTrue(description.contains("acceptedCount"));
         assertTrue(description.contains("status values: applied, rejected_by_game, execution_error, timed_out, rejected_by_safety, unknown"));
+    }
+
+    @Test
+    public void toolsListIncludesTakeScreenshot() {
+        MCPConfig config = GSON.fromJson("{\"server\":{}}", MCPConfig.class);
+        JsonArray tools = MCPProtocol.getToolsListResponse(config);
+
+        boolean hasTakeScreenshot = IntStream.range(0, tools.size())
+            .mapToObj(i -> tools.get(i).getAsJsonObject())
+            .anyMatch(tool -> "take_screenshot".equals(tool.get("name").getAsString()));
+
+        assertTrue(hasTakeScreenshot);
     }
 }
