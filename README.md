@@ -16,14 +16,14 @@ This mod creates an HTTP server within the Minecraft client that accepts MCP pro
 
 ## Requirements
 
-- **Minecraft**: 1.21.4
-- **Fabric Loader**: 0.16.14 or higher
-- **Fabric API**: 0.119.3+1.21.4
+- **Minecraft**: 1.21.11
+- **Fabric Loader**: 0.18.4 or higher
+- **Fabric API**: 0.141.3+1.21.11 or higher
 - **Java**: 21 or higher
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.4
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.11
 2. Download and install [Fabric API](https://modrinth.com/mod/fabric-api)
 3. Place the mod JAR file in your `mods` folder
 4. Launch Minecraft with the Fabric profile
