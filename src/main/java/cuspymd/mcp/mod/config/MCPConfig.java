@@ -15,6 +15,11 @@ public class MCPConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(MCPConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
+    public static final List<String> DEFAULT_ALLOWED_COMMANDS = List.of(
+        "fill", "clone", "setblock", "summon", "tp", "give", "gamemode",
+        "effect", "enchant", "weather", "time", "say", "tell", "title"
+    );
+
     private ServerConfig server = new ServerConfig();
     private ClientConfig client = new ClientConfig();
     private SafetyConfig safety = new SafetyConfig();
@@ -60,7 +65,7 @@ public class MCPConfig {
         private String host = "localhost";
         private boolean enableSafety = true;
         private int maxAreaSize = 10;
-        private List<String> allowedCommands = List.of("fill", "clone", "setblock", "summon", "tp", "give", "gamemode", "effect", "enchant", "weather", "time", "say", "tell", "title");
+        private List<String> allowedCommands = DEFAULT_ALLOWED_COMMANDS;
         private int requestTimeoutMs = 30000;
         private boolean autoStart = true;
         

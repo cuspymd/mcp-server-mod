@@ -8,16 +8,13 @@ import java.util.List;
 import java.util.Set;
 
 public class MCPProtocol {
-    private static final Set<String> DESCRIBABLE_COMMANDS = Set.of(
-        "fill", "clone", "setblock", "summon", "tp", "give", "gamemode",
-        "effect", "enchant", "weather", "time", "say", "tell", "title"
-    );
+    private static final Set<String> DESCRIBABLE_COMMANDS = Set.copyOf(MCPConfig.DEFAULT_ALLOWED_COMMANDS);
     
     public static JsonArray getToolsListResponse(MCPConfig config) {
         JsonArray tools = new JsonArray();
         List<String> configuredAllowedCommands = (config != null && config.getServer() != null && config.getServer().getAllowedCommands() != null)
             ? config.getServer().getAllowedCommands()
-            : List.of("fill", "clone", "setblock", "summon", "tp", "give", "gamemode", "effect", "enchant", "weather", "time", "say", "tell", "title");
+            : MCPConfig.DEFAULT_ALLOWED_COMMANDS;
         List<String> allowedCommands = filterAllowedCommandsForDescription(configuredAllowedCommands);
         String allowedCommandsText = allowedCommands.isEmpty() ? "(none configured)" : String.join(", ", allowedCommands);
         
