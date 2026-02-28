@@ -4,10 +4,13 @@ A Fabric mod that implements a Model Context Protocol (MCP) server, enabling AI 
 
 ## Overview
 
-This mod creates an HTTP server within the Minecraft client that accepts MCP protocol requests, allowing Large Language Models to execute Minecraft commands safely and efficiently. The mod includes comprehensive safety validation to prevent destructive operations.
+This mod creates an HTTP server within the Minecraft client or dedicated server that accepts MCP protocol requests, allowing Large Language Models to execute Minecraft commands safely and efficiently. The mod includes comprehensive safety validation to prevent destructive operations.
+
+It is designed to be fully compatible with both Single-Player (Integrated Server) and Multiplayer Dedicated Servers.
 
 ## Features
 
+- **Server and Client Support**: Works on both single-player and dedicated server environments.
 - **MCP Protocol Support**: Full implementation of Model Context Protocol for AI interaction
 - **Safety Validation**: Comprehensive command filtering and validation system
 - **Asynchronous Execution**: Non-blocking command execution to maintain game performance
@@ -34,9 +37,17 @@ This mod creates an HTTP server within the Minecraft client that accepts MCP pro
 
 The MCP server starts automatically when you launch Minecraft with the mod installed. By default, it runs on `localhost:8080`.
 
+### Server vs Client Modes
+
+The mod detects if it is running in a Client (Single Player) or a Dedicated Server environment:
+- **Client Mode**: Full feature support, including the `take_screenshot` tool, which uses the local game window.
+- **Dedicated Server Mode**: Has access to tools like `execute_commands`, `get_player_info`, and `get_blocks_in_area`, enabling full AI manipulation of the world without rendering. The `take_screenshot` tool is disabled in server mode since there is no rendering context. Note that `get_player_info` currently selects the first online player on the server to report its location.
+
+If playing Single Player, the integrated server logic runs through the client-side MCP.
+
 ### Configuration
 
-The mod creates a configuration file at `config/mcp-client.json`:
+The mod creates a configuration file at `config/mcp.json`:
 
 ```json
 {
@@ -267,7 +278,7 @@ Capture a screenshot of the current Minecraft game screen. Optionally, you can s
 
 For debugging purposes, you can enable local saving of every screenshot captured by the MCP server.
 
-1. Open `config/mcp-client.json`.
+1. Open `config/mcp.json`.
 2. Set `"save_screenshots_for_debug": true` in the `client` section.
 3. Screenshots will be saved to the `mcp_debug_screenshots/` directory in your Minecraft instance folder.
 4. Files are named using the pattern: `screenshot_YYYYMMDD_HHMMSS_SSS.png`.

@@ -1,5 +1,8 @@
 package cuspymd.mcp.mod.utils;
 
+import net.minecraft.util.math.BlockPos;
+import java.util.Objects;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.*;

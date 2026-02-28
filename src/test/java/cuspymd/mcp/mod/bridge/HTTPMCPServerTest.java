@@ -16,7 +16,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Success() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         CompletableFuture<String> future = CompletableFuture.completedFuture("abc123");
 
         JsonObject response = server.awaitScreenshotResult(future);
@@ -30,7 +30,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Timeout() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         TimeoutFuture future = new TimeoutFuture();
 
         JsonObject response = server.awaitScreenshotResult(future);
@@ -42,7 +42,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Interrupted() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         InterruptedFuture future = new InterruptedFuture();
 
         try {
@@ -58,7 +58,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_ExecutionFailure() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         CompletableFuture<String> future = new CompletableFuture<>();
         future.completeExceptionally(new IllegalStateException("capture failed"));
 
@@ -180,7 +180,7 @@ public class HTTPMCPServerTest {
         CompletableFuture<String> nextFuture;
 
         TestableHTTPMCPServer(MCPConfig config) {
-            super(config);
+            super(config, null, null, null, null);
         }
 
         @Override

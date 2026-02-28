@@ -10,10 +10,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BlockScanner {
+public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockScanner.class);
     
-    public static JsonObject scanBlocksInArea(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
+    @Override
+    public JsonObject scanBlocksInArea(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
+        return scanBlocksInAreaStatic(fromPos, toPos, maxAreaSize);
+    }
+
+    public static JsonObject scanBlocksInAreaStatic(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
         try {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.world == null) {
