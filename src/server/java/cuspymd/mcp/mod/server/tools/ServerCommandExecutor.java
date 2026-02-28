@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.command.ICommandExecutor;
+import cuspymd.mcp.mod.command.SafetyValidator;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
 import net.minecraft.server.MinecraftServer;
@@ -21,9 +22,12 @@ public class ServerCommandExecutor implements ICommandExecutor {
     private final MCPConfig config;
     private final MinecraftServer server;
 
+    private final SafetyValidator safetyValidator;
+
     public ServerCommandExecutor(MCPConfig config, MinecraftServer server) {
         this.config = config;
         this.server = server;
+        this.safetyValidator = new SafetyValidator(config);
     }
 
     @Override
@@ -41,6 +45,8 @@ public class ServerCommandExecutor implements ICommandExecutor {
 
         List<String> allMessages = new ArrayList<>();
 
+        boolean validateSafety = !arguments.has("validate_safety") || arguments.get("validate_safety").getAsBoolean();
+
         for (int i = 0; i < totalCommands; i++) {
             JsonElement elem = commandsArray.get(i);
             if (!elem.isJsonPrimitive() || !elem.getAsJsonPrimitive().isString()) {
@@ -52,6 +58,35 @@ public class ServerCommandExecutor implements ICommandExecutor {
             JsonObject resultObj = new JsonObject();
             resultObj.addProperty("index", i);
             resultObj.addProperty("command", originalCommand);
+
+            if (validateSafety) {
+                SafetyValidator.ValidationResult validationResult = safetyValidator.validate(command);
+                if (!validationResult.isValid()) {
+                    failedCount++;
+                    resultObj.addProperty("status", "rejected_by_safety");
+                    resultObj.addProperty("accepted", false);
+                    resultObj.addProperty("applied", false);
+                    resultObj.addProperty("summary", "Safety validation failed: " + validationResult.getErrorMessage());
+                    resultObj.add("chatMessages", new JsonArray());
+                    results.add(resultObj);
+
+                    // Fail fast: Stop executing further commands
+                    for (int j = i + 1; j < totalCommands; j++) {
+                        JsonElement remainingElem = commandsArray.get(j);
+                        if (!remainingElem.isJsonPrimitive() || !remainingElem.getAsJsonPrimitive().isString()) continue;
+                        JsonObject skippedObj = new JsonObject();
+                        skippedObj.addProperty("index", j);
+                        skippedObj.addProperty("command", remainingElem.getAsString());
+                        skippedObj.addProperty("status", "skipped");
+                        skippedObj.addProperty("accepted", false);
+                        skippedObj.addProperty("applied", false);
+                        skippedObj.addProperty("summary", "Skipped due to previous command failing safety validation.");
+                        skippedObj.add("chatMessages", new JsonArray());
+                        results.add(skippedObj);
+                    }
+                    break; // stop processing
+                }
+            }
 
             try {
                 // Execute on main server thread
@@ -142,6 +177,6 @@ public class ServerCommandExecutor implements ICommandExecutor {
         responseJson.add("chatMessages", allMessagesArray);
         responseJson.addProperty("hint", "Use get_blocks_in_area to verify the built structure and fix any issues.");
 
-        return responseJson;
+        return MCPProtocol.createSuccessResponse(responseJson.toString());
     }
 }
