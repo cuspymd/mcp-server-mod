@@ -8,7 +8,11 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IPCClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IPCClient.class);
     private static final Gson GSON = new Gson();
     private static final int IPC_PORT = 25565;
     private static final String IPC_HOST = "localhost";
@@ -83,7 +87,7 @@ public class IPCClient {
             if (writer != null) writer.close();
             if (socket != null) socket.close();
         } catch (IOException e) {
-            // Error handled silently
+            LOGGER.error("Failed to disconnect IPC client", e);
         }
     }
     
