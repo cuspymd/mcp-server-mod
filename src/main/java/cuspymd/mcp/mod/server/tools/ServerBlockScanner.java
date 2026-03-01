@@ -63,7 +63,7 @@ public class ServerBlockScanner implements IBlockScanner {
                             net.minecraft.block.BlockState state = world.getBlockState(pos);
 
                             if (!state.isAir()) {
-                                String name = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).getPath();
+                                String name = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
                                 blocks.add(new cuspymd.mcp.mod.utils.BlockCompressor.BlockData(x, y, z, name));
                                 count++;
                             }
