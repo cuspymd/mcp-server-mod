@@ -20,7 +20,9 @@ public class ServerBlockScanner implements IBlockScanner {
         try {
             return server.submit(() -> {
                 if (server == null || server.getPlayerManager() == null || server.getPlayerManager().getPlayerList().isEmpty()) {
-                    return MCPProtocol.createErrorResponse("No players online to determine dimension", null);
+                    JsonObject error = new JsonObject();
+                    error.addProperty("error", "No players online to determine dimension");
+                    return error;
                 }
 
                 // Just use the first player's world
@@ -46,7 +48,9 @@ public class ServerBlockScanner implements IBlockScanner {
                 int dz = maxZ - minZ + 1;
 
                 if (dx > maxAreaSize || dy > maxAreaSize || dz > maxAreaSize) {
-                    return MCPProtocol.createErrorResponse("Area too large. Max size is " + maxAreaSize + " per axis.", null);
+                    JsonObject error = new JsonObject();
+                    error.addProperty("error", "Area too large. Max size is " + maxAreaSize + " per axis.");
+                    return error;
                 }
 
                 java.util.List<cuspymd.mcp.mod.utils.BlockCompressor.BlockData> blocks = new java.util.ArrayList<>();
@@ -77,7 +81,9 @@ public class ServerBlockScanner implements IBlockScanner {
                 return result;
             }).get();
         } catch (Exception e) {
-            return MCPProtocol.createErrorResponse("Failed to scan blocks: " + e.getMessage(), null);
+            JsonObject error = new JsonObject();
+            error.addProperty("error", "Failed to scan blocks: " + e.getMessage());
+            return error;
         }
     }
 }
