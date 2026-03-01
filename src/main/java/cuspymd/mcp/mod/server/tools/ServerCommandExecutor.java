@@ -41,6 +41,7 @@ public class ServerCommandExecutor implements ICommandExecutor {
 
         JsonArray results = new JsonArray();
         int acceptedCount = 0;
+        int appliedCount = 0;
         int failedCount = 0;
 
         List<String> allMessages = new ArrayList<>();
@@ -147,11 +148,13 @@ public class ServerCommandExecutor implements ICommandExecutor {
 
                 if (successCount > 0) {
                     acceptedCount++;
+                    appliedCount++;
                     resultObj.addProperty("status", "success");
                     resultObj.addProperty("accepted", true);
                     resultObj.addProperty("applied", true);
                     resultObj.addProperty("summary", "Command executed successfully. Feedback: " + (msgs.size() > 0 ? msgs.get(0).getAsString() : ""));
                 } else {
+                    acceptedCount++;
                     failedCount++;
                     resultObj.addProperty("status", "failed");
                     resultObj.addProperty("accepted", true);
@@ -173,7 +176,7 @@ public class ServerCommandExecutor implements ICommandExecutor {
         JsonObject responseJson = new JsonObject();
         responseJson.addProperty("totalCommands", totalCommands);
         responseJson.addProperty("acceptedCount", acceptedCount);
-        responseJson.addProperty("appliedCount", acceptedCount);
+        responseJson.addProperty("appliedCount", appliedCount);
         responseJson.addProperty("failedCount", failedCount);
         responseJson.add("results", results);
         JsonArray allMessagesArray = new JsonArray();
