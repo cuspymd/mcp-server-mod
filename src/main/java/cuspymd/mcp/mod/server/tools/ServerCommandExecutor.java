@@ -120,8 +120,7 @@ public class ServerCommandExecutor implements ICommandExecutor {
                     int successCount = 0;
                     try {
                         // The actual execute method for commands in this mappings version for parsing and execution
-                        server.getCommandManager().getDispatcher().execute(command, capturingSource);
-                        successCount = 1;
+                        successCount = server.getCommandManager().getDispatcher().execute(command, capturingSource);
                     } catch (Exception ex) {
                         messages.add("Execution failed: " + ex.getMessage());
                     }
