@@ -37,8 +37,8 @@ public class ServerPlayerInfoProvider implements IPlayerInfoProvider {
                 blockPos.addProperty("z", player.getBlockPos().getZ());
                 info.add("blockPosition", blockPos);
 
-                info.addProperty("dimension", player.getWorld().getRegistryKey().getValue().toString());
-                info.addProperty("gameMode", player.interactionManager.getGameMode().getName());
+                info.addProperty("dimension", player.getCommandSource().getWorld().getRegistryKey().getValue().toString());
+                info.addProperty("gameMode", player.interactionManager.getGameMode().name().toLowerCase());
                 info.addProperty("health", player.getHealth());
 
                 return info;

@@ -8,6 +8,18 @@ import com.google.gson.JsonObject;
 import java.util.*;
 
 public class BlockCompressor {
+
+    public static class BlockData {
+        public final int x, y, z;
+        public final String type;
+
+        public BlockData(int x, int y, int z, String type) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.type = type;
+        }
+    }
     
     public static class BlockRegion {
         public final int startX, startY, startZ;
@@ -64,18 +76,13 @@ public class BlockCompressor {
         }
     }
     
-    public static JsonObject compressBlocks(List<JsonObject> blockList) {
+    public static JsonObject compressBlocks(List<BlockData> blockList) {
         Map<String, Set<BlockPosition>> blocksByType = new HashMap<>();
         
         // Group blocks by type
-        for (JsonObject block : blockList) {
-            String blockType = block.get("type").getAsString();
-            int x = block.get("x").getAsInt();
-            int y = block.get("y").getAsInt();
-            int z = block.get("z").getAsInt();
-            
-            blocksByType.computeIfAbsent(blockType, k -> new HashSet<>())
-                       .add(new BlockPosition(x, y, z));
+        for (BlockData block : blockList) {
+            blocksByType.computeIfAbsent(block.type, k -> new HashSet<>())
+                       .add(new BlockPosition(block.x, block.y, block.z));
         }
         
         JsonObject result = new JsonObject();

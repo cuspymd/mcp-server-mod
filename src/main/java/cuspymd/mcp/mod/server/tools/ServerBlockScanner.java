@@ -25,7 +25,7 @@ public class ServerBlockScanner implements IBlockScanner {
 
                 // Just use the first player's world
                 ServerPlayerEntity player = server.getPlayerManager().getPlayerList().get(0);
-                ServerWorld world = player.getServerWorld();
+                ServerWorld world = player.getCommandSource().getWorld();
 
                 int x1 = fromPos.get("x").getAsInt();
                 int y1 = fromPos.get("y").getAsInt();

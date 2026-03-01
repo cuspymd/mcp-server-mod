@@ -76,7 +76,7 @@ public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
             result.add("area", areaInfo);
             
             // Scan blocks
-            List<JsonObject> blockList = new ArrayList<>();
+            List<BlockCompressor.BlockData> blockList = new ArrayList<>();
             int totalBlocks = 0;
             
             for (int x = minX; x <= maxX; x++) {
@@ -90,13 +90,7 @@ public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
                             continue;
                         }
                         
-                        JsonObject blockInfo = new JsonObject();
-                        blockInfo.addProperty("x", x);
-                        blockInfo.addProperty("y", y);
-                        blockInfo.addProperty("z", z);
-                        blockInfo.addProperty("type", blockState.getBlock().toString());
-                        
-                        blockList.add(blockInfo);
+                        blockList.add(new BlockCompressor.BlockData(x, y, z, net.minecraft.registry.Registries.BLOCK.getId(blockState.getBlock()).toString()));
                         totalBlocks++;
                     }
                 }
