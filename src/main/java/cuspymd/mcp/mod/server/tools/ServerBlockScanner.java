@@ -19,15 +19,21 @@ public class ServerBlockScanner implements IBlockScanner {
     public JsonObject scanBlocksInArea(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
         try {
             return server.submit(() -> {
-                if (server == null || server.getPlayerManager() == null || server.getPlayerManager().getPlayerList().isEmpty()) {
+                if (server == null) {
                     JsonObject error = new JsonObject();
-                    error.addProperty("error", "No players online to determine dimension");
+                    error.addProperty("error", "Server instance not available");
                     return error;
                 }
 
-                // Just use the first player's world
-                ServerPlayerEntity player = server.getPlayerManager().getPlayerList().get(0);
-                ServerWorld world = player.getCommandSource().getWorld();
+                ServerWorld world;
+                if (server.getPlayerManager() == null || server.getPlayerManager().getPlayerList().isEmpty()) {
+                    // Fallback to the overworld if no players are online
+                    world = server.getOverworld();
+                } else {
+                    // Use the first player's world
+                    ServerPlayerEntity player = server.getPlayerManager().getPlayerList().get(0);
+                    world = player.getCommandSource().getWorld();
+                }
 
                 int x1 = fromPos.get("x").getAsInt();
                 int y1 = fromPos.get("y").getAsInt();
