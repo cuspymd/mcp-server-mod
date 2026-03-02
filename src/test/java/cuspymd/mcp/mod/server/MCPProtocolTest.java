@@ -46,4 +46,16 @@ public class MCPProtocolTest {
 
         assertTrue(hasTakeScreenshot);
     }
+
+    @Test
+    public void toolsListCanExcludeTakeScreenshot() {
+        MCPConfig config = GSON.fromJson("{\"server\":{}}", MCPConfig.class);
+        JsonArray tools = MCPProtocol.getToolsListResponse(config, false);
+
+        boolean hasTakeScreenshot = IntStream.range(0, tools.size())
+            .mapToObj(i -> tools.get(i).getAsJsonObject())
+            .anyMatch(tool -> "take_screenshot".equals(tool.get("name").getAsString()));
+
+        assertFalse(hasTakeScreenshot);
+    }
 }

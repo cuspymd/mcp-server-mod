@@ -10,10 +10,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BlockScanner {
+public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockScanner.class);
     
-    public static JsonObject scanBlocksInArea(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
+    @Override
+    public JsonObject scanBlocksInArea(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
+        return scanBlocksInAreaStatic(fromPos, toPos, maxAreaSize);
+    }
+
+    public static JsonObject scanBlocksInAreaStatic(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
         try {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.world == null) {
@@ -71,7 +76,7 @@ public class BlockScanner {
             result.add("area", areaInfo);
             
             // Scan blocks
-            List<JsonObject> blockList = new ArrayList<>();
+            List<BlockCompressor.BlockData> blockList = new ArrayList<>();
             int totalBlocks = 0;
             
             for (int x = minX; x <= maxX; x++) {
@@ -85,13 +90,7 @@ public class BlockScanner {
                             continue;
                         }
                         
-                        JsonObject blockInfo = new JsonObject();
-                        blockInfo.addProperty("x", x);
-                        blockInfo.addProperty("y", y);
-                        blockInfo.addProperty("z", z);
-                        blockInfo.addProperty("type", blockState.getBlock().toString());
-                        
-                        blockList.add(blockInfo);
+                        blockList.add(new BlockCompressor.BlockData(x, y, z, net.minecraft.registry.Registries.BLOCK.getId(blockState.getBlock()).toString()));
                         totalBlocks++;
                     }
                 }

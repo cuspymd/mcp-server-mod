@@ -21,6 +21,9 @@
 		],
 		"client": [
 			"cuspymd.mcp.mod.MCPServerModClient"
+		],
+		"server": [
+			"cuspymd.mcp.mod.MCPServerModServer"
 		]
 	},
 	"mixins": [

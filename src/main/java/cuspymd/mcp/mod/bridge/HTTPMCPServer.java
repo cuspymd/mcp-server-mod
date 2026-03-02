@@ -6,12 +6,12 @@ import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import cuspymd.mcp.mod.command.CommandExecutor;
+import cuspymd.mcp.mod.command.ICommandExecutor;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
-import cuspymd.mcp.mod.utils.PlayerInfoProvider;
-import cuspymd.mcp.mod.utils.BlockScanner;
-import cuspymd.mcp.mod.utils.ScreenshotUtils;
+import cuspymd.mcp.mod.utils.IPlayerInfoProvider;
+import cuspymd.mcp.mod.utils.IBlockScanner;
+import cuspymd.mcp.mod.utils.IScreenshotUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +31,33 @@ public class HTTPMCPServer {
     private static final Gson GSON = new Gson();
     
     private final MCPConfig config;
-    private final CommandExecutor commandExecutor;
+    private final ICommandExecutor commandExecutor;
+    private final IPlayerInfoProvider playerInfoProvider;
+    private final IBlockScanner blockScanner;
+    private final IScreenshotUtils screenshotUtils;
+    private final boolean screenshotToolEnabled;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private HttpServer httpServer;
     private ExecutorService executor;
     
-    public HTTPMCPServer(MCPConfig config) {
+    public HTTPMCPServer(MCPConfig config, ICommandExecutor commandExecutor, IPlayerInfoProvider playerInfoProvider, IBlockScanner blockScanner, IScreenshotUtils screenshotUtils) {
+        this(config, commandExecutor, playerInfoProvider, blockScanner, screenshotUtils, true);
+    }
+
+    public HTTPMCPServer(
+        MCPConfig config,
+        ICommandExecutor commandExecutor,
+        IPlayerInfoProvider playerInfoProvider,
+        IBlockScanner blockScanner,
+        IScreenshotUtils screenshotUtils,
+        boolean screenshotToolEnabled
+    ) {
         this.config = config;
-        this.commandExecutor = new CommandExecutor(config);
+        this.commandExecutor = commandExecutor;
+        this.playerInfoProvider = playerInfoProvider;
+        this.blockScanner = blockScanner;
+        this.screenshotUtils = screenshotUtils;
+        this.screenshotToolEnabled = screenshotToolEnabled;
     }
     
     public void start() throws IOException {
@@ -275,7 +294,7 @@ public class HTTPMCPServer {
     
     private JsonObject handleToolsList() {
         JsonObject response = new JsonObject();
-        response.add("tools", MCPProtocol.getToolsListResponse(config));
+        response.add("tools", MCPProtocol.getToolsListResponse(config, screenshotToolEnabled));
         return response;
     }
     
@@ -295,6 +314,9 @@ public class HTTPMCPServer {
                     return handleGetBlocksInArea(arguments);
                 }
                 case "take_screenshot" -> {
+                    if (!screenshotToolEnabled) {
+                        return MCPProtocol.createErrorResponse("Tool not available in dedicated server mode", null);
+                    }
                     return handleTakeScreenshot(arguments);
                 }
                 case null, default -> {
@@ -315,7 +337,7 @@ public class HTTPMCPServer {
     
     private JsonObject handleGetPlayerInfo() {
         try {
-            JsonObject playerInfo = PlayerInfoProvider.getPlayerInfo();
+            JsonObject playerInfo = playerInfoProvider.getPlayerInfo();
             
             // Check if there was an error getting player info
             if (playerInfo.has("error")) {
@@ -347,7 +369,7 @@ public class HTTPMCPServer {
             }
             
             int maxAreaSize = config.getServer().getMaxAreaSize();
-            JsonObject result = BlockScanner.scanBlocksInArea(fromPos, toPos, maxAreaSize);
+            JsonObject result = blockScanner.scanBlocksInArea(fromPos, toPos, maxAreaSize);
             
             // Check if there was an error scanning blocks
             if (result.has("error")) {
@@ -405,7 +427,7 @@ public class HTTPMCPServer {
     }
 
     CompletableFuture<String> takeScreenshotAsync(JsonObject params) {
-        return ScreenshotUtils.takeScreenshot(params);
+        return screenshotUtils.takeScreenshot(params);
     }
     
     private JsonObject createSuccessResponse(JsonObject result, Integer requestId) {

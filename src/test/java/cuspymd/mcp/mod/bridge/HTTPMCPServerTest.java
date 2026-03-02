@@ -16,7 +16,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Success() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         CompletableFuture<String> future = CompletableFuture.completedFuture("abc123");
 
         JsonObject response = server.awaitScreenshotResult(future);
@@ -30,7 +30,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Timeout() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         TimeoutFuture future = new TimeoutFuture();
 
         JsonObject response = server.awaitScreenshotResult(future);
@@ -42,7 +42,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_Interrupted() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         InterruptedFuture future = new InterruptedFuture();
 
         try {
@@ -58,7 +58,7 @@ public class HTTPMCPServerTest {
 
     @Test
     public void testAwaitScreenshotResult_ExecutionFailure() {
-        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig());
+        HTTPMCPServer server = new HTTPMCPServer(new MCPConfig(), null, null, null, null);
         CompletableFuture<String> future = new CompletableFuture<>();
         future.completeExceptionally(new IllegalStateException("capture failed"));
 
@@ -135,6 +135,49 @@ public class HTTPMCPServerTest {
         assertEquals("no-args-image", firstContent.get("data").getAsString());
     }
 
+    @Test
+    public void testHandleMCPRequest_ToolsListWithoutScreenshotInDedicatedMode() throws Exception {
+        TestableHTTPMCPServer server = new TestableHTTPMCPServer(new MCPConfig(), false);
+
+        JsonObject request = new JsonObject();
+        request.addProperty("jsonrpc", "2.0");
+        request.addProperty("id", 10);
+        request.addProperty("method", "tools/list");
+        request.add("params", new JsonObject());
+
+        JsonObject response = invokeHandleMCPRequest(server, request);
+        JsonArray tools = response.getAsJsonObject("result").getAsJsonArray("tools");
+
+        boolean hasTakeScreenshot = false;
+        for (int i = 0; i < tools.size(); i++) {
+            if ("take_screenshot".equals(tools.get(i).getAsJsonObject().get("name").getAsString())) {
+                hasTakeScreenshot = true;
+                break;
+            }
+        }
+        assertFalse(hasTakeScreenshot);
+    }
+
+    @Test
+    public void testHandleMCPRequest_ToolsCallTakeScreenshotDisabledInDedicatedMode() throws Exception {
+        TestableHTTPMCPServer server = new TestableHTTPMCPServer(new MCPConfig(), false);
+
+        JsonObject request = new JsonObject();
+        request.addProperty("jsonrpc", "2.0");
+        request.addProperty("id", 11);
+        request.addProperty("method", "tools/call");
+        JsonObject params = new JsonObject();
+        params.addProperty("name", "take_screenshot");
+        params.add("arguments", new JsonObject());
+        request.add("params", params);
+
+        JsonObject response = invokeHandleMCPRequest(server, request);
+        JsonObject result = response.getAsJsonObject("result");
+
+        assertTrue(result.get("isError").getAsBoolean());
+        assertTrue(extractText(result).contains("Tool not available in dedicated server mode"));
+    }
+
     private JsonObject invokeHandleMCPRequest(HTTPMCPServer server, JsonObject request) throws Exception {
         Method method = HTTPMCPServer.class.getDeclaredMethod("handleMCPRequest", JsonObject.class);
         method.setAccessible(true);
@@ -180,7 +223,11 @@ public class HTTPMCPServerTest {
         CompletableFuture<String> nextFuture;
 
         TestableHTTPMCPServer(MCPConfig config) {
-            super(config);
+            this(config, true);
+        }
+
+        TestableHTTPMCPServer(MCPConfig config, boolean screenshotToolEnabled) {
+            super(config, null, null, null, null, screenshotToolEnabled);
         }
 
         @Override

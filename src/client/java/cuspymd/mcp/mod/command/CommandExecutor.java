@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
-public class CommandExecutor {
+public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandExecutor.class);
     private static final long COMMAND_MESSAGE_WAIT_MS = 700L;
     private static final long COMMAND_MESSAGE_IDLE_MS = 120L;

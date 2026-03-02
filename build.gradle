@@ -28,6 +28,12 @@ loom {
 		}
 	}
 
+	runs {
+		server {
+			source sourceSets.client
+		}
+	}
+
 }
 
 dependencies {

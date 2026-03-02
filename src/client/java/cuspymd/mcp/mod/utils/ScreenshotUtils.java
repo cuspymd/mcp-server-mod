@@ -21,9 +21,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class ScreenshotUtils {
+public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScreenshotUtils.class);
     static final List<DeferredTask> pendingDeferredTasks = Collections.synchronizedList(new ArrayList<>());
+
+    @Override
+    public CompletableFuture<String> takeScreenshot(JsonObject params) {
+        return takeScreenshotStatic(params);
+    }
 
     static class DeferredTask {
         Runnable runnable;
@@ -43,7 +48,7 @@ public class ScreenshotUtils {
      * @param params JsonObject containing optional x, y, z, yaw, pitch
      * @return A CompletableFuture that completes with the Base64 encoded PNG image data
      */
-    public static CompletableFuture<String> takeScreenshot(JsonObject params) {
+    public static CompletableFuture<String> takeScreenshotStatic(JsonObject params) {
         MinecraftClient client = MinecraftClient.getInstance();
         CompletableFuture<String> future = new CompletableFuture<>();
 

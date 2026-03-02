@@ -12,18 +12,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class BlockCompressorTest {
 
-    private JsonObject createBlock(int x, int y, int z, String type) {
-        JsonObject block = new JsonObject();
-        block.addProperty("x", x);
-        block.addProperty("y", y);
-        block.addProperty("z", z);
-        block.addProperty("type", type);
-        return block;
+    private BlockCompressor.BlockData createBlock(int x, int y, int z, String type) {
+        return new BlockCompressor.BlockData(x, y, z, type);
     }
 
     @Test
     public void testSingleBlockCompression() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         blocks.add(createBlock(10, 64, 10, "minecraft:stone"));
         
         JsonObject result = BlockCompressor.compressBlocks(blocks);
@@ -47,7 +42,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testConnectedBlocksCompression() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         // Create a 2x2x2 cube of stone blocks
         for (int x = 10; x <= 11; x++) {
             for (int y = 64; y <= 65; y++) {
@@ -85,7 +80,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testMixedBlocksCompression() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         
         // Single stone block
         blocks.add(createBlock(0, 64, 0, "minecraft:stone"));
@@ -149,7 +144,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testDisconnectedBlocksOfSameType() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         
         // Two separate stone blocks
         blocks.add(createBlock(0, 64, 0, "minecraft:stone"));
@@ -170,7 +165,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testEmptyBlockList() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         
         JsonObject result = BlockCompressor.compressBlocks(blocks);
         JsonArray blockTypes = result.getAsJsonArray("blocks");
@@ -180,7 +175,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testLShapedConnectedBlocks() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         
         // Create an L-shaped structure
         blocks.add(createBlock(10, 64, 10, "minecraft:stone"));
@@ -215,7 +210,7 @@ public class BlockCompressorTest {
 
     @Test
     public void testVerticallyConnectedBlocks() {
-        List<JsonObject> blocks = new ArrayList<>();
+        List<BlockCompressor.BlockData> blocks = new ArrayList<>();
         
         // Create a vertical tower
         for (int y = 64; y <= 67; y++) {

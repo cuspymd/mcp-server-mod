@@ -26,7 +26,19 @@ public class MCPConfig {
     
     public static MCPConfig load() {
         Path configDir = FabricLoader.getInstance().getConfigDir();
-        Path configFile = configDir.resolve("mcp-client.json");
+        String configFileName = "mcp.json";
+        Path configFile = configDir.resolve(configFileName);
+
+        // Backwards compatibility with mcp-client.json
+        Path oldConfigFile = configDir.resolve("mcp-client.json");
+        if (Files.exists(oldConfigFile) && !Files.exists(configFile)) {
+            try {
+                Files.move(oldConfigFile, configFile);
+            } catch (IOException e) {
+                LOGGER.warn("Failed to rename mcp-client.json to mcp.json", e);
+                configFile = oldConfigFile;
+            }
+        }
         
         if (Files.exists(configFile)) {
             try {
@@ -44,7 +56,7 @@ public class MCPConfig {
     
     public void save() {
         Path configDir = FabricLoader.getInstance().getConfigDir();
-        Path configFile = configDir.resolve("mcp-client.json");
+        Path configFile = configDir.resolve("mcp.json");
         
         try {
             Files.createDirectories(configDir);

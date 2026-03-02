@@ -3,7 +3,7 @@ package cuspymd.mcp.mod.bridge;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import cuspymd.mcp.mod.command.CommandExecutor;
+import cuspymd.mcp.mod.command.ICommandExecutor;
 import cuspymd.mcp.mod.config.MCPConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +20,13 @@ public class IPCServer {
     private static final Gson GSON = new Gson();
     private static final int IPC_PORT = 25565; // Default port for IPC
     
-    private final CommandExecutor commandExecutor;
+    private final ICommandExecutor commandExecutor;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ServerSocket serverSocket;
     private ExecutorService executor;
     
-    public IPCServer(MCPConfig config) {
-        this.commandExecutor = new CommandExecutor(config);
+    public IPCServer(MCPConfig config, ICommandExecutor commandExecutor) {
+        this.commandExecutor = commandExecutor;
     }
     
     public void start() throws IOException {

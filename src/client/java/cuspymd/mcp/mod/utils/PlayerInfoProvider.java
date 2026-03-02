@@ -6,9 +6,14 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public class PlayerInfoProvider {
+public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProvider {
     
-    public static JsonObject getPlayerInfo() {
+    @Override
+    public JsonObject getPlayerInfo() {
+        return getPlayerInfoStatic();
+    }
+
+    public static JsonObject getPlayerInfoStatic() {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
         World world = client.world;

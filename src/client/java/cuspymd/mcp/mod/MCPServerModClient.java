@@ -27,12 +27,18 @@ public class MCPServerModClient implements ClientModInitializer {
 				String transport = config.getServer().getTransport();
 				
 				if ("http".equals(transport)) {
-					httpServer = new HTTPMCPServer(config);
+					httpServer = new HTTPMCPServer(config,
+						new cuspymd.mcp.mod.command.CommandExecutor(config),
+						new cuspymd.mcp.mod.utils.PlayerInfoProvider(),
+						new cuspymd.mcp.mod.utils.BlockScanner(),
+						new cuspymd.mcp.mod.utils.ScreenshotUtils(),
+						true
+					);
 					httpServer.start();
 					LOGGER.info("HTTP MCP Server started on port {}", httpServer.getPort());
 				} else {
 					// Default to stdio transport
-					ipcServer = new IPCServer(config);
+					ipcServer = new IPCServer(config, new cuspymd.mcp.mod.command.CommandExecutor(config));
 					ipcServer.start();
 					LOGGER.info("IPC Server started on port {}", ipcServer.getPort());
 				}

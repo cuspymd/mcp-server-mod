@@ -11,6 +11,10 @@ public class MCPProtocol {
     private static final Set<String> DESCRIBABLE_COMMANDS = Set.copyOf(MCPConfig.DEFAULT_ALLOWED_COMMANDS);
     
     public static JsonArray getToolsListResponse(MCPConfig config) {
+        return getToolsListResponse(config, true);
+    }
+
+    public static JsonArray getToolsListResponse(MCPConfig config, boolean includeScreenshotTool) {
         JsonArray tools = new JsonArray();
         List<String> configuredAllowedCommands = (config != null && config.getServer() != null && config.getServer().getAllowedCommands() != null)
             ? config.getServer().getAllowedCommands()
@@ -184,50 +188,52 @@ public class MCPProtocol {
         getBlocksInAreaTool.add("inputSchema", blocksInputSchema);
         tools.add(getBlocksInAreaTool);
 
-        // Take screenshot tool
-        JsonObject takeScreenshotTool = new JsonObject();
-        takeScreenshotTool.addProperty("name", "take_screenshot");
-        takeScreenshotTool.addProperty("description", "Capture a screenshot of the current Minecraft game screen. " +
-            "This allows you to visually inspect the world, your builds, or the player's surroundings. " +
-            "Optionally, you can specify coordinates and rotation to move the player and set their gaze before taking the screenshot. " +
-            "IMPORTANT: If x, y, and z are provided, the player WILL be teleported to that location. " +
-            "If yaw and pitch are provided, the player's camera direction WILL be changed. " +
-            "Use this to get the perfect angle for inspecting structures.");
+        if (includeScreenshotTool) {
+            // Take screenshot tool (client-only)
+            JsonObject takeScreenshotTool = new JsonObject();
+            takeScreenshotTool.addProperty("name", "take_screenshot");
+            takeScreenshotTool.addProperty("description", "Capture a screenshot of the current Minecraft game screen. " +
+                "This allows you to visually inspect the world, your builds, or the player's surroundings. " +
+                "Optionally, you can specify coordinates and rotation to move the player and set their gaze before taking the screenshot. " +
+                "IMPORTANT: If x, y, and z are provided, the player WILL be teleported to that location. " +
+                "If yaw and pitch are provided, the player's camera direction WILL be changed. " +
+                "Use this to get the perfect angle for inspecting structures.");
 
-        JsonObject screenshotInputSchema = new JsonObject();
-        screenshotInputSchema.addProperty("type", "object");
+            JsonObject screenshotInputSchema = new JsonObject();
+            screenshotInputSchema.addProperty("type", "object");
 
-        JsonObject screenshotProperties = new JsonObject();
+            JsonObject screenshotProperties = new JsonObject();
 
-        JsonObject xCoord = new JsonObject();
-        xCoord.addProperty("type", "number");
-        xCoord.addProperty("description", "Optional X coordinate to teleport the player to");
+            JsonObject xCoord = new JsonObject();
+            xCoord.addProperty("type", "number");
+            xCoord.addProperty("description", "Optional X coordinate to teleport the player to");
 
-        JsonObject yCoord = new JsonObject();
-        yCoord.addProperty("type", "number");
-        yCoord.addProperty("description", "Optional Y coordinate to teleport the player to");
+            JsonObject yCoord = new JsonObject();
+            yCoord.addProperty("type", "number");
+            yCoord.addProperty("description", "Optional Y coordinate to teleport the player to");
 
-        JsonObject zCoord = new JsonObject();
-        zCoord.addProperty("type", "number");
-        zCoord.addProperty("description", "Optional Z coordinate to teleport the player to");
+            JsonObject zCoord = new JsonObject();
+            zCoord.addProperty("type", "number");
+            zCoord.addProperty("description", "Optional Z coordinate to teleport the player to");
 
-        JsonObject yawProp = new JsonObject();
-        yawProp.addProperty("type", "number");
-        yawProp.addProperty("description", "Optional Yaw rotation (0 to 360, or -180 to 180) to set the player's horizontal view direction");
+            JsonObject yawProp = new JsonObject();
+            yawProp.addProperty("type", "number");
+            yawProp.addProperty("description", "Optional Yaw rotation (0 to 360, or -180 to 180) to set the player's horizontal view direction");
 
-        JsonObject pitchProp = new JsonObject();
-        pitchProp.addProperty("type", "number");
-        pitchProp.addProperty("description", "Optional Pitch rotation (-90 to 90) to set the player's vertical view direction (looking down to up)");
+            JsonObject pitchProp = new JsonObject();
+            pitchProp.addProperty("type", "number");
+            pitchProp.addProperty("description", "Optional Pitch rotation (-90 to 90) to set the player's vertical view direction (looking down to up)");
 
-        screenshotProperties.add("x", xCoord);
-        screenshotProperties.add("y", yCoord);
-        screenshotProperties.add("z", zCoord);
-        screenshotProperties.add("yaw", yawProp);
-        screenshotProperties.add("pitch", pitchProp);
+            screenshotProperties.add("x", xCoord);
+            screenshotProperties.add("y", yCoord);
+            screenshotProperties.add("z", zCoord);
+            screenshotProperties.add("yaw", yawProp);
+            screenshotProperties.add("pitch", pitchProp);
 
-        screenshotInputSchema.add("properties", screenshotProperties);
-        takeScreenshotTool.add("inputSchema", screenshotInputSchema);
-        tools.add(takeScreenshotTool);
+            screenshotInputSchema.add("properties", screenshotProperties);
+            takeScreenshotTool.add("inputSchema", screenshotInputSchema);
+            tools.add(takeScreenshotTool);
+        }
         
         return tools;
     }
