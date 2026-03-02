@@ -1,7 +1,6 @@
 package cuspymd.mcp.mod;
 
 import net.fabricmc.api.ClientModInitializer;
-import cuspymd.mcp.mod.bridge.IPCServer;
 import cuspymd.mcp.mod.bridge.HTTPMCPServer;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.utils.ScreenshotUtils;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 public class MCPServerModClient implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("mcp-server-mod");
-	private IPCServer ipcServer;
 	private HTTPMCPServer httpServer;
 	
 	@Override
@@ -37,10 +35,7 @@ public class MCPServerModClient implements ClientModInitializer {
 					httpServer.start();
 					LOGGER.info("HTTP MCP Server started on port {}", httpServer.getPort());
 				} else {
-					// Default to stdio transport
-					ipcServer = new IPCServer(config, new cuspymd.mcp.mod.command.CommandExecutor(config));
-					ipcServer.start();
-					LOGGER.info("IPC Server started on port {}", ipcServer.getPort());
+					LOGGER.warn("Unsupported transport: {}. Only 'http' is supported.", transport);
 				}
 			}
 		} catch (Exception e) {
@@ -49,10 +44,6 @@ public class MCPServerModClient implements ClientModInitializer {
 	}
 	
 	public void onClientShutdown() {
-		if (ipcServer != null) {
-			ipcServer.stop();
-			LOGGER.info("IPC Server stopped");
-		}
 		if (httpServer != null) {
 			httpServer.stop();
 			LOGGER.info("HTTP MCP Server stopped");
