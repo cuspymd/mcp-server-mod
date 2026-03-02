@@ -35,16 +35,29 @@ public class HTTPMCPServer {
     private final IPlayerInfoProvider playerInfoProvider;
     private final IBlockScanner blockScanner;
     private final IScreenshotUtils screenshotUtils;
+    private final boolean screenshotToolEnabled;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private HttpServer httpServer;
     private ExecutorService executor;
     
     public HTTPMCPServer(MCPConfig config, ICommandExecutor commandExecutor, IPlayerInfoProvider playerInfoProvider, IBlockScanner blockScanner, IScreenshotUtils screenshotUtils) {
+        this(config, commandExecutor, playerInfoProvider, blockScanner, screenshotUtils, true);
+    }
+
+    public HTTPMCPServer(
+        MCPConfig config,
+        ICommandExecutor commandExecutor,
+        IPlayerInfoProvider playerInfoProvider,
+        IBlockScanner blockScanner,
+        IScreenshotUtils screenshotUtils,
+        boolean screenshotToolEnabled
+    ) {
         this.config = config;
         this.commandExecutor = commandExecutor;
         this.playerInfoProvider = playerInfoProvider;
         this.blockScanner = blockScanner;
         this.screenshotUtils = screenshotUtils;
+        this.screenshotToolEnabled = screenshotToolEnabled;
     }
     
     public void start() throws IOException {
@@ -281,7 +294,7 @@ public class HTTPMCPServer {
     
     private JsonObject handleToolsList() {
         JsonObject response = new JsonObject();
-        response.add("tools", MCPProtocol.getToolsListResponse(config));
+        response.add("tools", MCPProtocol.getToolsListResponse(config, screenshotToolEnabled));
         return response;
     }
     
@@ -301,6 +314,9 @@ public class HTTPMCPServer {
                     return handleGetBlocksInArea(arguments);
                 }
                 case "take_screenshot" -> {
+                    if (!screenshotToolEnabled) {
+                        return MCPProtocol.createErrorResponse("Tool not available in dedicated server mode", null);
+                    }
                     return handleTakeScreenshot(arguments);
                 }
                 case null, default -> {

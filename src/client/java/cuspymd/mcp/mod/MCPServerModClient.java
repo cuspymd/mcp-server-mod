@@ -31,7 +31,8 @@ public class MCPServerModClient implements ClientModInitializer {
 						new cuspymd.mcp.mod.command.CommandExecutor(config),
 						new cuspymd.mcp.mod.utils.PlayerInfoProvider(),
 						new cuspymd.mcp.mod.utils.BlockScanner(),
-						new cuspymd.mcp.mod.utils.ScreenshotUtils()
+						new cuspymd.mcp.mod.utils.ScreenshotUtils(),
+						true
 					);
 					httpServer.start();
 					LOGGER.info("HTTP MCP Server started on port {}", httpServer.getPort());

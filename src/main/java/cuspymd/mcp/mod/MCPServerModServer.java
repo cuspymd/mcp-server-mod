@@ -28,7 +28,8 @@ public class MCPServerModServer implements DedicatedServerModInitializer {
                             new cuspymd.mcp.mod.server.tools.ServerCommandExecutor(config, server),
                             new cuspymd.mcp.mod.server.tools.ServerPlayerInfoProvider(server),
                             new cuspymd.mcp.mod.server.tools.ServerBlockScanner(server),
-                            new cuspymd.mcp.mod.server.tools.ServerScreenshotUtils()
+                            new cuspymd.mcp.mod.server.tools.ServerScreenshotUtils(),
+                            false
                         );
                         httpServer.start();
                         LOGGER.info("HTTP MCP Server started on port {}", httpServer.getPort());
