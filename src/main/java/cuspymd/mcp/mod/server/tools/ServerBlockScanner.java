@@ -2,7 +2,6 @@ package cuspymd.mcp.mod.server.tools;
 
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.utils.IBlockScanner;
-import cuspymd.mcp.mod.server.MCPProtocol;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;

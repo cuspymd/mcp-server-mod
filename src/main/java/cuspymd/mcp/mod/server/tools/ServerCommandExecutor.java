@@ -8,7 +8,6 @@ import cuspymd.mcp.mod.command.SafetyValidator;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
@@ -19,13 +18,11 @@ import java.util.List;
 
 public class ServerCommandExecutor implements ICommandExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerCommandExecutor.class);
-    private final MCPConfig config;
     private final MinecraftServer server;
 
     private final SafetyValidator safetyValidator;
 
     public ServerCommandExecutor(MCPConfig config, MinecraftServer server) {
-        this.config = config;
         this.server = server;
         this.safetyValidator = new SafetyValidator(config);
     }
