@@ -159,7 +159,7 @@ public class ServerCommandExecutor implements ICommandExecutor {
                     resultObj.addProperty("summary", "Command failed to execute. Feedback: " + (msgs.size() > 0 ? msgs.get(0).getAsString() : ""));
                 }
             } catch (Exception e) {
-                LOGGER.error("Error executing server command: " + command, e);
+                LOGGER.error("Error executing server command: {}", command, e);
                 failedCount++;
                 resultObj.addProperty("status", "error");
                 resultObj.addProperty("accepted", false);
