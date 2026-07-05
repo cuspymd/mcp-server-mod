@@ -1,14 +1,14 @@
 package cuspymd.mcp.mod.utils;
 
 import com.google.gson.JsonObject;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 
 public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockScanner.class);
@@ -20,12 +20,12 @@ public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
 
     public static JsonObject scanBlocksInAreaStatic(JsonObject fromPos, JsonObject toPos, int maxAreaSize) {
         try {
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client.world == null) {
+            Minecraft client = Minecraft.getInstance();
+            if (client.level == null) {
                 return createErrorResponse("World not available");
             }
             
-            World world = client.world;
+            Level world = client.level;
             
             // Parse coordinates
             int fromX = fromPos.get("x").getAsInt();
@@ -86,11 +86,11 @@ public class BlockScanner implements cuspymd.mcp.mod.utils.IBlockScanner {
                         var blockState = world.getBlockState(pos);
                         
                         // Skip air blocks
-                        if (blockState.isOf(Blocks.AIR) || blockState.isOf(Blocks.VOID_AIR) || blockState.isOf(Blocks.CAVE_AIR)) {
+                        if (blockState.is(Blocks.AIR) || blockState.is(Blocks.VOID_AIR) || blockState.is(Blocks.CAVE_AIR)) {
                             continue;
                         }
                         
-                        blockList.add(new BlockCompressor.BlockData(x, y, z, net.minecraft.registry.Registries.BLOCK.getId(blockState.getBlock()).toString()));
+                        blockList.add(new BlockCompressor.BlockData(x, y, z, net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(blockState.getBlock()).toString()));
                         totalBlocks++;
                     }
                 }

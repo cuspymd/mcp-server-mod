@@ -1,11 +1,11 @@
 package cuspymd.mcp.mod.utils;
 
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import cuspymd.mcp.mod.config.MCPConfig;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.util.ScreenshotRecorder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +49,11 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
      * @return A CompletableFuture that completes with the Base64 encoded PNG image data
      */
     public static CompletableFuture<String> takeScreenshotStatic(JsonObject params) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         CompletableFuture<String> future = new CompletableFuture<>();
 
         // Ensure we are on the render thread for player manipulation and screenshotting
-        if (!client.isOnThread()) {
+        if (!client.isSameThread()) {
             client.execute(() -> takeScreenshotInternal(client, params, future));
         } else {
             takeScreenshotInternal(client, params, future);
@@ -62,7 +62,7 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
         return future;
     }
 
-    private static void takeScreenshotInternal(MinecraftClient client, JsonObject params, CompletableFuture<String> future) {
+    private static void takeScreenshotInternal(Minecraft client, JsonObject params, CompletableFuture<String> future) {
         try {
             if (client.player == null) {
                 future.completeExceptionally(new Exception("Player not found. Make sure you are in a world."));
@@ -88,21 +88,21 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
                 double z = params.get("z").getAsDouble();
 
                 // Use current values as defaults if rotation not provided
-                float yaw = params.has("yaw") ? params.get("yaw").getAsFloat() : client.player.getYaw();
-                float pitch = params.has("pitch") ? params.get("pitch").getAsFloat() : client.player.getPitch();
+                float yaw = params.has("yaw") ? params.get("yaw").getAsFloat() : client.player.getYRot();
+                float pitch = params.has("pitch") ? params.get("pitch").getAsFloat() : client.player.getXRot();
 
                 // Teleport the player
-                client.player.refreshPositionAndAngles(x, y, z, yaw, pitch);
+                client.player.snapTo(x, y, z, yaw, pitch);
                 LOGGER.info("Teleported player to {} {} {} (yaw: {}, pitch: {}) for screenshot", x, y, z, yaw, pitch);
                 moved = true;
             } else {
                 // Handle only rotation if coordinates are not provided but rotation is
                 if (params.has("yaw")) {
-                    client.player.setYaw(params.get("yaw").getAsFloat());
+                    client.player.setYRot(params.get("yaw").getAsFloat());
                     moved = true;
                 }
                 if (params.has("pitch")) {
-                    client.player.setPitch(params.get("pitch").getAsFloat());
+                    client.player.setXRot(params.get("pitch").getAsFloat());
                     moved = true;
                 }
             }
@@ -141,7 +141,7 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
     /**
      * Called by ClientTickEvents.END_CLIENT_TICK to process deferred screenshot tasks.
      */
-    public static void onEndTick(MinecraftClient client) {
+    public static void onEndTick(Minecraft client) {
         synchronized (pendingDeferredTasks) {
             Iterator<DeferredTask> it = pendingDeferredTasks.iterator();
             while (it.hasNext()) {
@@ -195,12 +195,12 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
      * Note: This method depends on the Minecraft rendering engine and can only be
      * fully tested in a live game environment.
      */
-    private static void captureNow(MinecraftClient client, CompletableFuture<String> future) {
+    private static void captureNow(Minecraft client, CompletableFuture<String> future) {
         try {
             // Framebuffer access requires a valid OpenGL context, usually only available in the game process
-            Framebuffer framebuffer = client.getFramebuffer();
+            RenderTarget framebuffer = client.getMainRenderTarget();
 
-            ScreenshotRecorder.takeScreenshot(framebuffer, (nativeImage) -> {
+            Screenshot.takeScreenshot(framebuffer, (nativeImage) -> {
                 Path tempFile = null;
                 boolean shouldSaveDebug = false;
                 try {
@@ -209,7 +209,7 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
 
                     // Create a temporary file to save the PNG
                     tempFile = Files.createTempFile("mcp_screenshot", ".png");
-                    nativeImage.writeTo(tempFile);
+                    nativeImage.writeToFile(tempFile);
 
                     // Read the file bytes and encode to Base64
                     byte[] bytes = Files.readAllBytes(tempFile);

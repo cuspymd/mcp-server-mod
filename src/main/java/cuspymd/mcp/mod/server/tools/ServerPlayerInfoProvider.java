@@ -3,7 +3,7 @@ package cuspymd.mcp.mod.server.tools;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.utils.IPlayerInfoProvider;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public class ServerPlayerInfoProvider implements IPlayerInfoProvider {
     private final MinecraftServer server;
@@ -17,13 +17,13 @@ public class ServerPlayerInfoProvider implements IPlayerInfoProvider {
         try {
             return server.submit(() -> {
                 JsonObject info = new JsonObject();
-                if (server == null || server.getPlayerManager() == null || server.getPlayerManager().getPlayerList().isEmpty()) {
+                if (server == null || server.getPlayerList() == null || server.getPlayerList().getPlayers().isEmpty()) {
                     info.addProperty("error", "No players online on the server");
                     return info;
                 }
 
                 // Just take the first player for now
-                ServerPlayerEntity player = server.getPlayerManager().getPlayerList().get(0);
+                ServerPlayer player = server.getPlayerList().getPlayers().get(0);
 
                 JsonObject pos = new JsonObject();
                 pos.addProperty("x", player.getX());
@@ -32,13 +32,13 @@ public class ServerPlayerInfoProvider implements IPlayerInfoProvider {
                 info.add("position", pos);
 
                 JsonObject blockPos = new JsonObject();
-                blockPos.addProperty("x", player.getBlockPos().getX());
-                blockPos.addProperty("y", player.getBlockPos().getY());
-                blockPos.addProperty("z", player.getBlockPos().getZ());
+                blockPos.addProperty("x", player.blockPosition().getX());
+                blockPos.addProperty("y", player.blockPosition().getY());
+                blockPos.addProperty("z", player.blockPosition().getZ());
                 info.add("blockPosition", blockPos);
 
-                info.addProperty("dimension", player.getCommandSource().getWorld().getRegistryKey().getValue().toString());
-                info.addProperty("gameMode", player.interactionManager.getGameMode().name().toLowerCase());
+                info.addProperty("dimension", player.createCommandSourceStack().getLevel().dimension().identifier().toString());
+                info.addProperty("gameMode", player.gameMode.getGameModeForPlayer().name().toLowerCase());
                 info.addProperty("health", player.getHealth());
 
                 return info;

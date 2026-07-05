@@ -1,30 +1,30 @@
 package cuspymd.mcp.mod.mixin.client;
 
 import cuspymd.mcp.mod.command.ChatMessageCapture;
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.Text;
+import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MessageSignature;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public class ChatMessageCaptureMixin {
 
     @Inject(
-        method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
+        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
         at = @At("HEAD")
     )
-    private void onChatMessage(Text message, MessageSignatureData signature, MessageIndicator indicator, CallbackInfo ci) {
+    private void onChatMessage(Component message, MessageSignature signature, GuiMessageTag indicator, CallbackInfo ci) {
         ChatMessageCapture.getInstance().captureMessage(message.getString(), classifySource(signature, indicator));
     }
 
-    private ChatMessageCapture.MessageSource classifySource(MessageSignatureData signature, MessageIndicator indicator) {
-        if (indicator == MessageIndicator.system()
-            || indicator == MessageIndicator.singlePlayer()
-            || indicator == MessageIndicator.chatError()) {
+    private ChatMessageCapture.MessageSource classifySource(MessageSignature signature, GuiMessageTag indicator) {
+        if (indicator == GuiMessageTag.system()
+            || indicator == GuiMessageTag.systemSinglePlayer()
+            || indicator == GuiMessageTag.chatError()) {
             return ChatMessageCapture.MessageSource.SYSTEM;
         }
 

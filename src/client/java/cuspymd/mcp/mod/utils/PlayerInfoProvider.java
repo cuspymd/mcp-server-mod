@@ -1,10 +1,10 @@
 package cuspymd.mcp.mod.utils;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProvider {
     
@@ -14,9 +14,9 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
     }
 
     public static JsonObject getPlayerInfoStatic() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
-        World world = client.world;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
+        Level world = client.level;
         
         JsonObject playerInfo = new JsonObject();
         
@@ -41,16 +41,16 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         
         // Facing direction
         JsonObject rotation = new JsonObject();
-        rotation.addProperty("yaw", player.getYaw());
-        rotation.addProperty("pitch", player.getPitch());
+        rotation.addProperty("yaw", player.getYRot());
+        rotation.addProperty("pitch", player.getXRot());
         playerInfo.add("rotation", rotation);
         
         // Cardinal direction (N, S, E, W, NE, NW, SE, SW)
-        String direction = getCardinalDirection(player.getYaw());
+        String direction = getCardinalDirection(player.getYRot());
         playerInfo.addProperty("facingDirection", direction);
         
         // Look vector (normalized direction the player is looking)
-        Vec3d lookVec = player.getRotationVec(1.0f);
+        Vec3 lookVec = player.getViewVector(1.0f);
         JsonObject lookVector = new JsonObject();
         lookVector.addProperty("x", lookVec.x);
         lookVector.addProperty("y", lookVec.y);
@@ -58,8 +58,8 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         playerInfo.add("lookVector", lookVector);
         
         // Calculate position in front of player (useful for building)
-        Vec3d playerPos = new Vec3d(player.getX(), player.getY(), player.getZ());
-        Vec3d frontPos = playerPos.add(lookVec.multiply(3.0)); // 3 blocks in front
+        Vec3 playerPos = new Vec3(player.getX(), player.getY(), player.getZ());
+        Vec3 frontPos = playerPos.add(lookVec.scale(3.0)); // 3 blocks in front
         JsonObject frontPosition = new JsonObject();
         frontPosition.addProperty("x", (int) Math.floor(frontPos.x));
         frontPosition.addProperty("y", (int) Math.floor(frontPos.y));
@@ -69,20 +69,20 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         // Health and food information
         playerInfo.addProperty("health", player.getHealth());
         playerInfo.addProperty("maxHealth", player.getMaxHealth());
-        playerInfo.addProperty("foodLevel", player.getHungerManager().getFoodLevel());
-        playerInfo.addProperty("saturation", player.getHungerManager().getSaturationLevel());
+        playerInfo.addProperty("foodLevel", player.getFoodData().getFoodLevel());
+        playerInfo.addProperty("saturation", player.getFoodData().getSaturationLevel());
         
         // Game mode
-        if (client.interactionManager != null) {
-            playerInfo.addProperty("gameMode", client.interactionManager.getCurrentGameMode().name().toLowerCase());
+        if (client.gameMode != null) {
+            playerInfo.addProperty("gameMode", client.gameMode.getPlayerMode().name().toLowerCase());
         }
         
         // Dimension information
         if (world != null) {
-            playerInfo.addProperty("dimension", world.getRegistryKey().getValue().toString());
-            playerInfo.addProperty("timeOfDay", world.getTimeOfDay());
-            playerInfo.addProperty("isDay", world.isDay());
-            playerInfo.addProperty("isNight", world.isNight());
+            playerInfo.addProperty("dimension", world.dimension().identifier().toString());
+            playerInfo.addProperty("timeOfDay", world.getDayTime());
+            playerInfo.addProperty("isDay", world.isBrightOutside());
+            playerInfo.addProperty("isNight", world.isDarkOutside());
         }
         
         // Player name
@@ -96,10 +96,10 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         // Inventory information
         JsonObject inventory = new JsonObject();
         inventory.addProperty("selectedSlot", player.getInventory().getSelectedSlot());
-        inventory.addProperty("mainHandItem", player.getMainHandStack().isEmpty() ? "empty" : 
-            player.getMainHandStack().getItem().toString());
-        inventory.addProperty("offHandItem", player.getOffHandStack().isEmpty() ? "empty" : 
-            player.getOffHandStack().getItem().toString());
+        inventory.addProperty("mainHandItem", player.getMainHandItem().isEmpty() ? "empty" : 
+            player.getMainHandItem().getItem().toString());
+        inventory.addProperty("offHandItem", player.getOffhandItem().isEmpty() ? "empty" : 
+            player.getOffhandItem().getItem().toString());
         playerInfo.add("inventory", inventory);
         
         return playerInfo;
