@@ -5,8 +5,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +15,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import java.util.concurrent.TimeUnit;
 
 public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor {
@@ -71,8 +71,8 @@ public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor
     }
     
     private JsonObject executeCommandsSequentially(List<String> commands) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.world == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.level == null) {
             return MCPProtocol.createErrorResponse("Player or world is not available", null);
         }
         
@@ -112,8 +112,8 @@ public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor
         long startTime = System.currentTimeMillis();
         CompletableFuture<CommandResult> resultFuture = new CompletableFuture<>();
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
 
         if (player == null) {
             resultFuture.complete(buildExecutionError(command, "Player is not available", startTime));
@@ -132,7 +132,7 @@ public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor
                 }
 
                 try {
-                    if (client.getNetworkHandler() == null) {
+                    if (client.getConnection() == null) {
                         resultFuture.complete(buildExecutionError(command, "Network handler is not available", startTime));
                         return;
                     }
@@ -140,7 +140,7 @@ public class CommandExecutor implements cuspymd.mcp.mod.command.ICommandExecutor
                     boolean sent = sendCommandIfPending(
                         resultFuture,
                         command,
-                        cmd -> client.getNetworkHandler().sendChatCommand(cmd)
+                        cmd -> client.getConnection().sendCommand(cmd)
                     );
                     if (!sent) {
                         return;

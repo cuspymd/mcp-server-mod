@@ -7,9 +7,9 @@ import cuspymd.mcp.mod.command.ICommandExecutor;
 import cuspymd.mcp.mod.command.SafetyValidator;
 import cuspymd.mcp.mod.config.MCPConfig;
 import cuspymd.mcp.mod.server.MCPProtocol;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,25 +92,25 @@ public class ServerCommandExecutor implements ICommandExecutor {
                     List<String> messages = new ArrayList<>();
 
                     // Create a capturing command source based on the server source
-                    ServerCommandSource originalSource = server.getCommandSource();
-                    ServerCommandSource capturingSource = originalSource.withOutput(new net.minecraft.server.command.CommandOutput() {
+                    CommandSourceStack originalSource = server.createCommandSourceStack();
+                    CommandSourceStack capturingSource = originalSource.withSource(new net.minecraft.commands.CommandSource() {
                         @Override
-                        public void sendMessage(Text message) {
+                        public void sendSystemMessage(Component message) {
                             messages.add(message.getString());
                         }
 
                         @Override
-                        public boolean shouldReceiveFeedback() {
+                        public boolean acceptsSuccess() {
                             return true;
                         }
 
                         @Override
-                        public boolean shouldTrackOutput() {
+                        public boolean acceptsFailure() {
                             return true;
                         }
 
                         @Override
-                        public boolean shouldBroadcastConsoleToOps() {
+                        public boolean shouldInformAdmins() {
                             return false;
                         }
                     });
@@ -118,7 +118,7 @@ public class ServerCommandExecutor implements ICommandExecutor {
                     int successCount = 0;
                     try {
                         // The actual execute method for commands in this mappings version for parsing and execution
-                        successCount = server.getCommandManager().getDispatcher().execute(command, capturingSource);
+                        successCount = server.getCommands().getDispatcher().execute(command, capturingSource);
                     } catch (Exception ex) {
                         messages.add("Execution failed: " + ex.getMessage());
                     }

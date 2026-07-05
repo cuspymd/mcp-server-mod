@@ -19,23 +19,36 @@ It is designed to be fully compatible with both Single-Player (Integrated Server
 
 ## Requirements
 
-- **Minecraft**: 1.21.11
-- **Fabric Loader**: 0.18.4 or higher
-- **Fabric API**: 0.141.3+1.21.11 or higher
-- **Java**: 21 or higher
+- **Minecraft**: 26.1
+- **Fabric Loader**: 0.19.3 or higher
+- **Fabric API**: 0.145.1+26.1 or higher compatible 26.1 build
+- **Java**: 25 or higher
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.11
-2. Download and install [Fabric API](https://modrinth.com/mod/fabric-api)
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.1
+2. Download and install a Minecraft 26.1-compatible [Fabric API](https://modrinth.com/mod/fabric-api)
 3. Place the mod JAR file in your `mods` folder
 4. Launch Minecraft with the Fabric profile
+
+Minecraft 26.1 is unobfuscated. This mod is built against Mojang official names and does not use Yarn mappings.
 
 ## Usage
 
 ### Starting the MCP Server
 
 The MCP server starts automatically when you launch Minecraft with the mod installed. By default, it runs on `localhost:8080`.
+
+### Important Command Permission Settings
+
+Before using AI command tools, make sure command input is allowed in your current game mode:
+- **Single Player**: When creating a world, set **Allow Cheats** to **ON**.
+- **Multiplayer / Dedicated Server**: The player running commands must have server permission (for example, OP or equivalent permission from your server permission plugin).
+
+To keep AI interactions working while switching between applications:
+- Disable **Pause on Lost Focus** by pressing `F3 + P` in-game.
+- Minecraft will show a confirmation message when the setting is toggled.
+- If this is left enabled, the game pauses when Minecraft loses focus and AI-issued commands will not execute.
 
 ### Server vs Client Modes
 

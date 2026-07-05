@@ -2,10 +2,10 @@ package cuspymd.mcp.mod.server.tools;
 
 import com.google.gson.JsonObject;
 import cuspymd.mcp.mod.utils.IBlockScanner;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 public class ServerBlockScanner implements IBlockScanner {
     private final MinecraftServer server;
@@ -24,14 +24,14 @@ public class ServerBlockScanner implements IBlockScanner {
                     return error;
                 }
 
-                ServerWorld world;
-                if (server.getPlayerManager() == null || server.getPlayerManager().getPlayerList().isEmpty()) {
+                ServerLevel world;
+                if (server.getPlayerList() == null || server.getPlayerList().getPlayers().isEmpty()) {
                     // Fallback to the overworld if no players are online
-                    world = server.getOverworld();
+                    world = server.overworld();
                 } else {
                     // Use the first player's world
-                    ServerPlayerEntity player = server.getPlayerManager().getPlayerList().get(0);
-                    world = player.getCommandSource().getWorld();
+                    ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                    world = player.createCommandSourceStack().getLevel();
                 }
 
                 int x1 = fromPos.get("x").getAsInt();
@@ -65,10 +65,10 @@ public class ServerBlockScanner implements IBlockScanner {
                     for (int y = minY; y <= maxY; y++) {
                         for (int z = minZ; z <= maxZ; z++) {
                             BlockPos pos = new BlockPos(x, y, z);
-                            net.minecraft.block.BlockState state = world.getBlockState(pos);
+                            net.minecraft.world.level.block.state.BlockState state = world.getBlockState(pos);
 
                             if (!state.isAir()) {
-                                String name = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
+                                String name = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
                                 blocks.add(new cuspymd.mcp.mod.utils.BlockCompressor.BlockData(x, y, z, name));
                                 count++;
                             }
