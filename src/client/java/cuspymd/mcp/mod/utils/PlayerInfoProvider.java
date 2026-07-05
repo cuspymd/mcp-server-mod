@@ -80,7 +80,7 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         // Dimension information
         if (world != null) {
             playerInfo.addProperty("dimension", world.dimension().identifier().toString());
-            playerInfo.addProperty("timeOfDay", world.getDayTime());
+            playerInfo.addProperty("timeOfDay", world.getDefaultClockTime());
             playerInfo.addProperty("isDay", world.isBrightOutside());
             playerInfo.addProperty("isNight", world.isDarkOutside());
         }

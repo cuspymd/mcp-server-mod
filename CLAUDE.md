@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Minecraft Fabric mod that implements an MCP (Model Context Protocol) server, allowing LLMs like Claude to execute Minecraft commands through HTTP requests. The mod runs on Fabric 1.21.11 and creates an HTTP server on port 8080 that accepts MCP protocol messages.
+This is a Minecraft Fabric mod that implements an MCP (Model Context Protocol) server, allowing LLMs like Claude to execute Minecraft commands through HTTP requests. The mod runs on Fabric 26.1 and creates an HTTP server on port 8080 that accepts MCP protocol messages.
 
 ## Development Commands
 
@@ -42,15 +42,17 @@ The mod uses Fabric's split environment feature with separate client and main so
 
 ```
 src/
-├── main/java/cuspymd/mcp/mod/   # Server-side code
+├── main/java/cuspymd/mcp/mod/   # Server-side and shared code
 │   ├── MCPServerMod.java        # Main mod class
+│   ├── MCPServerModServer.java  # Dedicated server entry point
 │   ├── config/MCPConfig.java    # Configuration management
 │   ├── server/MCPProtocol.java  # MCP protocol definitions
-│   └── bridge/IPCClient.java    # Inter-process communication
+│   ├── bridge/HTTPMCPServer.java # HTTP server implementation
+│   ├── command/                 # Shared command safety/executor interfaces
+│   └── utils/                   # Shared utility interfaces and compression
 ├── client/java/cuspymd/mcp/mod/ # Client-side code
 │   ├── MCPServerModClient.java  # Client mod initializer
-│   ├── bridge/HTTPMCPServer.java # HTTP server implementation
-│   ├── command/                 # Command execution system
+│   ├── command/                 # Client command execution system
 │   │   ├── CommandExecutor.java
 │   │   ├── SafetyValidator.java
 │   │   ├── CommandResult.java
@@ -102,10 +104,10 @@ Configuration is loaded at client initialization and can be modified at runtime.
 
 ## Key Technical Details
 
-- **Fabric Loader**: 0.18.4+
-- **Minecraft Version**: 1.21.11
-- **Java Version**: 21+
-- **Mixins**: Client-side mixins for game integration
+- **Fabric Loader**: 0.19.3+
+- **Minecraft Version**: 26.1
+- **Java Version**: 25+
+- **Mappings**: Mojang official/unobfuscated names; Yarn is not used for 26.1+
 - **HTTP Server**: Java NIO-based HTTP server
 - **JSON Processing**: Uses Gson (Minecraft built-in)
 - **Async Processing**: Commands executed asynchronously to prevent main thread blocking
