@@ -198,7 +198,7 @@ public class ScreenshotUtils implements cuspymd.mcp.mod.utils.IScreenshotUtils {
     private static void captureNow(Minecraft client, CompletableFuture<String> future) {
         try {
             // Framebuffer access requires a valid OpenGL context, usually only available in the game process
-            RenderTarget framebuffer = client.getMainRenderTarget();
+            RenderTarget framebuffer = client.gameRenderer.mainRenderTarget();
 
             Screenshot.takeScreenshot(framebuffer, (nativeImage) -> {
                 Path tempFile = null;

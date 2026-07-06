@@ -19,19 +19,19 @@ It is designed to be fully compatible with both Single-Player (Integrated Server
 
 ## Requirements
 
-- **Minecraft**: 26.1
+- **Minecraft**: 26.2
 - **Fabric Loader**: 0.19.3 or higher
-- **Fabric API**: 0.145.1+26.1 or higher compatible 26.1 build
+- **Fabric API**: 0.154.1+26.2 or higher compatible 26.2 build
 - **Java**: 25 or higher
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.1
-2. Download and install a Minecraft 26.1-compatible [Fabric API](https://modrinth.com/mod/fabric-api)
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.2
+2. Download and install a Minecraft 26.2-compatible [Fabric API](https://modrinth.com/mod/fabric-api)
 3. Place the mod JAR file in your `mods` folder
 4. Launch Minecraft with the Fabric profile
 
-Minecraft 26.1 is unobfuscated. This mod is built against Mojang official names and does not use Yarn mappings.
+Minecraft 26.2 is unobfuscated. This mod is built against Mojang official names and does not use Yarn mappings.
 
 ## Usage
 

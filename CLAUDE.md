@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Minecraft Fabric mod that implements an MCP (Model Context Protocol) server, allowing LLMs like Claude to execute Minecraft commands through HTTP requests. The mod runs on Fabric 26.1 and creates an HTTP server on port 8080 that accepts MCP protocol messages.
+This is a Minecraft Fabric mod that implements an MCP (Model Context Protocol) server, allowing LLMs like Claude to execute Minecraft commands through HTTP requests. The mod runs on Fabric 26.2 and creates an HTTP server on port 8080 that accepts MCP protocol messages.
 
 ## Development Commands
 
@@ -105,7 +105,7 @@ Configuration is loaded at client initialization and can be modified at runtime.
 ## Key Technical Details
 
 - **Fabric Loader**: 0.19.3+
-- **Minecraft Version**: 26.1
+- **Minecraft Version**: 26.2
 - **Java Version**: 25+
 - **Mappings**: Mojang official/unobfuscated names; Yarn is not used for 26.1+
 - **HTTP Server**: Java NIO-based HTTP server
