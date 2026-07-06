@@ -63,8 +63,19 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         // (lookVec.y is non-zero for almost any pitch, which previously made Math.floor
         // round frontPosition.y down below the player's actual standing height).
         double horizontalLength = Math.sqrt(lookVec.x * lookVec.x + lookVec.z * lookVec.z);
-        double dirX = horizontalLength > 1e-6 ? lookVec.x / horizontalLength : 0.0;
-        double dirZ = horizontalLength > 1e-6 ? lookVec.z / horizontalLength : 0.0;
+        double dirX;
+        double dirZ;
+        if (horizontalLength > 1e-6) {
+            dirX = lookVec.x / horizontalLength;
+            dirZ = lookVec.z / horizontalLength;
+        } else {
+            // Looking (near) straight up/down collapses the horizontal look vector to
+            // zero, even though yaw still points somewhere meaningful. Fall back to
+            // yaw alone so frontPosition stays 3 blocks ahead instead of on top of the player.
+            float yawRad = player.getYRot() * ((float) Math.PI / 180F);
+            dirX = -Math.sin(yawRad);
+            dirZ = Math.cos(yawRad);
+        }
         Vec3 playerPos = new Vec3(player.getX(), player.getY(), player.getZ());
         Vec3 frontPos = new Vec3(playerPos.x + dirX * 3.0, playerPos.y, playerPos.z + dirZ * 3.0);
         JsonObject frontPosition = new JsonObject();
