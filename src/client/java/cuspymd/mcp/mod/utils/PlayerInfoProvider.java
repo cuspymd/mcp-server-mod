@@ -57,9 +57,16 @@ public class PlayerInfoProvider implements cuspymd.mcp.mod.utils.IPlayerInfoProv
         lookVector.addProperty("z", lookVec.z);
         playerInfo.add("lookVector", lookVector);
         
-        // Calculate position in front of player (useful for building)
+        // Calculate position in front of player (useful for building).
+        // Only the horizontal (x/z) look direction is used; pitch is ignored so that
+        // looking slightly up/down doesn't shift the reported ground level by a block
+        // (lookVec.y is non-zero for almost any pitch, which previously made Math.floor
+        // round frontPosition.y down below the player's actual standing height).
+        double horizontalLength = Math.sqrt(lookVec.x * lookVec.x + lookVec.z * lookVec.z);
+        double dirX = horizontalLength > 1e-6 ? lookVec.x / horizontalLength : 0.0;
+        double dirZ = horizontalLength > 1e-6 ? lookVec.z / horizontalLength : 0.0;
         Vec3 playerPos = new Vec3(player.getX(), player.getY(), player.getZ());
-        Vec3 frontPos = playerPos.add(lookVec.scale(3.0)); // 3 blocks in front
+        Vec3 frontPos = new Vec3(playerPos.x + dirX * 3.0, playerPos.y, playerPos.z + dirZ * 3.0);
         JsonObject frontPosition = new JsonObject();
         frontPosition.addProperty("x", (int) Math.floor(frontPos.x));
         frontPosition.addProperty("y", (int) Math.floor(frontPos.y));
